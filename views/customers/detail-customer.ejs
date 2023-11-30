@@ -1,0 +1,46 @@
+<main id="main" class="main">
+  <section class="section">
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Detail</h5>
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th scope="col">No</th>
+                  <th scope="col">ID Customer</th>
+                  <th scope="col">Username</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Email</th>
+                  <th scope="col">Mobile Phone</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (customer) { %>
+                <!-- Check if customer is defined -->
+                <tr>
+                  <td>1</td>
+                  <td><%= customer.id_customer %></td>
+                  <td><%= customer.username %></td>
+                  <td><%= customer.nama %></td>
+                  <td><%= customer.email %></td>
+                  <td><%= customer.mobile_phone %></td>
+                </tr>
+                <% } else { %>
+                <!-- Handle case when customer is not defined -->
+                <tr>
+                  <td colspan="6">Customer not found</td>
+                </tr>
+                <% } %>
+              </tbody>
+            </table>
+            <a href="/data-customer" class="btn btn-primary"
+              >Back to previous page</a
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>

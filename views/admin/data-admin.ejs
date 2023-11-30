@@ -1,0 +1,77 @@
+<main id="main" class="main">
+  <div class="pagetitle">
+    <h1><%= title %></h1>
+    <nav>
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="/">User/Employees</a></li>
+        <li class="breadcrumb-item active">Data Admin</li>
+      </ol>
+    </nav>
+  </div>
+  <!-- End Page Title -->
+
+  <section class="section">
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Data Admin</h5>
+            <a
+              href="/data-admin/add"
+              class="btn btn-primary btn-md position-relative"
+            >
+              Add
+            </a>
+            <table class="table table-hover datatable">
+              <thead>
+                <tr>
+                  <th scope="col">No</th>
+                  <th scope="col">ID Admin</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Email</th>
+                  <th scope="col">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% admins.forEach((data_admin, index) => { %>
+                <!-- scope="row" -->
+                <tr>
+                  <td><%= index + 1 %></td>
+                  <td><%= data_admin.id_admin %></td>
+                  <td><%= data_admin.nama %></td>
+                  <td><%= data_admin.email %></td>
+
+                  <td>
+                    <a
+                      href="/data-admin/detail-admin/<%= data_admin.id_admin %>"
+                      class="btn btn-primary btn-md position-relative"
+                      >Detail</a
+                    >
+
+                    <a
+                      href="/data-admin/update-admin/<%= data_admin.id_admin %>"
+                      class="btn btn-primary btn-md position-relative"
+                    >
+                      Update
+                    </a>
+
+                    <a
+                      href="/data-admin/delete-admin/<%= data_admin.id_admin %>"
+                      class="btn btn-danger btn-md position-relative"
+                      onclick="return confirm(`Are you sure you want to delete <%= data_admin.nama %>?`)"
+                    >
+                      Delete
+                    </a>
+                  </td>
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+<!-- End #main -->

@@ -1,0 +1,62 @@
+<main id="main" class="main">
+  <section class="section">
+      <div class="row">
+          <div class="col-lg-8">
+
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title"> Update Data Admin</h5>
+                <% if (typeof errors != 'undefined') { %>
+                  <div
+                    class="alert alert-primary shadow p-3 mb-5 bg-body rounded"
+                    role="alert"
+                  >
+                    <ul>
+                      <% errors.forEach(error => { %>
+                      <li><%= error.msg %></li>
+                      <% }) %>
+                    </ul>
+                    <% } %>
+
+                  <form action="/data-admin/update" method="post" class="row g-3">
+                    <div class="col-12">
+                      <label for="id_admin" class="form-label">ID Admin</label>
+                      <input type="text" class="form-control" id="id_admin" name="id_admin" value="<%= admins.id_admin ? admins.id_admin : '' %>" required>
+                    </div>
+
+                    <div class="col-12">
+                      <label for="username" class="form-label">Username</label>
+                      <input type="text" class="form-control" id="username"  name="username" value="<%= admins.username ? admins.username : '' %>" required>
+                    </div>
+                    <div class="col-12">
+                      <label for="name" class="form-label">Name</label>
+                      <input type="text" class="form-control" id="name" name="nama"  value="<%= admins.nama ? admins.nama : ''  %>"  required>
+                    </div>
+                    <div class="col-12">
+                      <label for="email" class="form-label">Email</label>
+                      <input type="text" class="form-control" id="email" name="email"  value="<%=  admins.email ? admins.email : ''  %>" required>
+                    </div>
+                    <div class="col-12">
+                      <label for="mobile_phone" class="form-label">Mobile Phone</label>
+                      <input type="text" class="form-control" id="mobile_phone"  name="mobile_phone"  value="<%= admins.mobile_phone ? admins.mobile_phone : '' %>" required>
+                    </div>
+                    <div class="text-center">
+                      <button type="submit" class="btn btn-primary">Submit</button>
+                      <button type="reset" class="btn btn-secondary">Reset</button>
+                      <a href="/data-admin" class="btn btn-primary">Back to admin page</a>
+                    </div>
+
+                    <input
+                      type="hidden"
+                      name="oldName"
+                      value="<%=  admins.oldName ? admins.oldName : ''|| admins.nama ? admins.nama : ''  %>"
+                    />
+                  </form> 
+                  <!-- Vertical Form -->
+
+                </div>
+              </div>
+          </div>
+        </div>
+      </section>
+</main>

@@ -1,0 +1,77 @@
+<main id="main" class="main">
+  <div class="pagetitle">
+    <h1><%= title %></h1>
+    <nav>
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="/">User/Employees</a></li>
+        <li class="breadcrumb-item active">Data Customers</li>
+      </ol>
+    </nav>
+  </div>
+  <!-- End Page Title -->
+
+  <section class="section">
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Data Customers</h5>
+            <a
+              href="/data-customer/add"
+              class="btn btn-primary btn-md position-relative"
+            >
+              Add
+            </a>
+            <table class="table table-hover datatable">
+              <thead>
+                <tr>
+                  <th scope="col">No</th>
+                  <th scope="col">ID Customer</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Email</th>
+                  <th scope="col">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% customers.forEach((data_customer, index) => { %>
+                <!-- scope="row" -->
+                <tr>
+                  <td><%= index + 1 %></td>
+                  <td><%= data_customer.id_customer %></td>
+                  <td><%= data_customer.nama %></td>
+                  <td><%= data_customer.email %></td>
+
+                  <td>
+                    <a
+                      href="/data-customer/detail-customer/<%= data_customer.id_customer %>"
+                      class="btn btn-primary btn-md position-relative"
+                      >Detail</a
+                    >
+
+                    <a
+                      href="/data-customer/update-customer/<%= data_customer.id_customer %>"
+                      class="btn btn-primary btn-md position-relative"
+                    >
+                      Update
+                    </a>
+
+                    <a
+                      href="/data-customer/delete-customer/<%= data_customer.id_customer %>"
+                      class="btn btn-danger btn-md position-relative"
+                      onclick="return confirm(`Are you sure you want to delete <%= data_customer.nama %>?`)"
+                    >
+                      Delete
+                    </a>
+                  </td>
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+<!-- End #main -->
