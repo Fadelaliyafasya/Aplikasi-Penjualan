@@ -1,4 +1,5 @@
 const express = require("express");
+// const multer = require('multer') // uploading image
 const app = express();
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
@@ -20,14 +21,20 @@ const {
   fetchDataCustomers,
   addDataCustomer,
   deleteDataCustomer,
-  fetchCustomerById,
-  checkIdCustomer,
   duplicateIdCustomerCheck,
   searchCustomer,
   emailDuplicateCustomerCheck,
   updateCustomer,
   duplicateCustomerName,
 } = require("./models/data_customers");
+
+const {
+  fetchDataProducts,
+  duplicateIdProductsCheck,
+  addDataProducts,
+  duplicateProductsName,
+  deleteDataProducts,
+} = require("./models/data_products");
 
 const host = "localhost";
 const port = 3001;
@@ -446,28 +453,152 @@ app.get("/data-customer/delete-customer/:id_customer", async (req, res) => {
 
 // ================ END CUSTOMERS ========================
 
-// ==================================== Products ====================================
-app.get("/products", (req, res) => {
-  res.render("products", {
+// ==================================== Products =======================================================
+// Pc Product list
+app.get("/products/PC", (req, res) => {
+  res.render("products/products-pc", {
+    title: "VirtuVorgue - Products",
+    layout: "layout/core-index",
+  });
+});
+
+// Mobile phone product list
+app.get("/products/mobile-phone", (req, res) => {
+  res.render("products/products-mobile-phone", {
+    title: "VirtuVorgue - Products",
+    layout: "layout/core-index",
+  });
+});
+
+// Sport product list
+app.get("/products/sports", (req, res) => {
+  res.render("products/products-sports", {
     title: "VirtuVorgue - Products",
     layout: "layout/core-index",
   });
 });
 
 app.get("/categories", (req, res) => {
-  res.render("categories", {
+  res.render("products/categories", {
     title: "VirtuVorgue - Categories",
     layout: "layout/core-index",
   });
 });
 
-app.get("/items", (req, res) => {
-  res.render("items", {
+// middlware untuk inventory item
+app.get("/items", async (req, res) => {
+  const products = await fetchDataProducts();
+  res.render("inventory/items", {
     title: "VirtuVorgue - Items",
     layout: "layout/core-index",
+    msg: req.flash("msg"),
+    products,
   });
 });
-// ==================================== End Products ====================================
+
+// middleware add items
+app.get("/items/add", async (req, res) => {
+  res.render("inventory/add-items", {
+    title: "VirtuVorgue - Add Items",
+    layout: "layout/core-index",
+    msg: req.flash("msg"),
+  });
+});
+
+app.post(
+  "/items/add",
+  [
+    body("product_id").custom(async (value) => {
+      const duplicate = await duplicateIdProductsCheck(value);
+
+      if (duplicate) {
+        throw new Error("ID already registered");
+      }
+      return true;
+    }),
+    body("product_name").custom(async (value) => {
+      const nameDuplicate = await duplicateProductsName(value);
+      if (nameDuplicate) {
+        throw new Error("Product has been registered");
+      }
+      return true;
+    }),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.render("inventory/add-items", {
+        title: "VirtuVorgue - Add Items",
+        layout: "layout/core-index.ejs",
+        errors: errors.array(),
+      });
+    } else {
+      try {
+        console.log("Data yang dikirim: ", req.body);
+
+        // Gunakan fungsi addDataAdmin dari model basis data
+        await addDataProducts(
+          // Ekstrak data dari tubuh permintaan
+          req.body.product_id,
+          req.body.product_name,
+          req.body.description,
+          req.body.price,
+          req.body.stock_quantity
+        );
+        req.flash("msg", "Data added successfully");
+
+        // Redirect ke halaman data-admin untuk melihat data yang diperbarui
+        res.redirect("/items");
+      } catch (err) {
+        console.error(err.msg);
+        req.flash("msg", "An error occurred while adding data");
+        res.status(500);
+      }
+    }
+  }
+);
+
+// middleware untuk detail items
+
+// detail items
+app.get("/items/detail-products/:product_name", async (req, res) => {
+  try {
+    const productName = req.params.product_name;
+    const findProduct = await fetchDataProducts();
+    const products = findProduct.find(
+      (products) => products.product_name === productName
+    ); // Tambahkan pemanggilan fetchData dengan parameter product_name
+
+    res.render("inventory/detail-items", {
+      title: "VirtuVorgue - Detail Product",
+      layout: "layout/core-index.ejs",
+      products,
+    });
+  } catch (err) {
+    console.log(err.msg);
+  }
+});
+
+// delete products b
+app.get("/items/delete-products/:product_id", async (req, res) => {
+  try {
+    const deleteProducts = await deleteDataProducts(req.params.product_id);
+
+    if (!deleteProducts) {
+      req.flash("msg", "Data not found or has been deleted");
+    } else {
+      req.flash("msg", "Data deleted successfully");
+    }
+
+    res.redirect("/items");
+  } catch (err) {
+    console.error(err.msg);
+    req.flash("msg", "An error occurred while deleting data.");
+    res.redirect("/items");
+  }
+});
+
+// ==================================== End Products ======================================================
 
 // ==================================== Register & login ====================================
 app.get("/register", (req, res) => {
