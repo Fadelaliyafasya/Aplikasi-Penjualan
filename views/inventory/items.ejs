@@ -1,0 +1,81 @@
+<main id="main" class="main">
+  <div class="pagetitle">
+    <h1><%= title %></h1>
+    <nav>
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="/inventory/">Inventory</a></li>
+        <li class="breadcrumb-item active">Data List Items</li>
+      </ol>
+    </nav>
+  </div>
+  <!-- End Page Title -->
+
+  <section class="section">
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Data List Items</h5>
+            <a
+              href="/items/add"
+              class="btn btn-primary btn-md position-relative"
+            >
+              Add
+            </a>
+            <table class="table table-hover datatable">
+              <thead>
+                <tr>
+                  <th scope="col">No</th>
+                  <th scope="col">Product Id</th>
+                  <th scope="col">Product Name</th>
+                  <th scope="col">Stock</th>
+                  <th scope="col">Price</th>
+
+                  <th scope="col">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% products.forEach((products, index) => { %>
+                <!-- scope="row" -->
+                <tr>
+                  <td><%= index + 1 %></td>
+                  <td><%= products.product_id %></td>
+                  <td><%= products.product_name %></td>
+
+                  <td><%= products.stock_quantity %></td>
+                  <td><%= products.price %></td>
+
+                  <td>
+                    <a
+                      href="/items/detail-products/<%= products.product_name %>"
+                      class="btn btn-primary btn-md position-relative"
+                      >Detail</a
+                    >
+
+                    <a
+                      href="/items/update-products/<%= products.product_name %>"
+                      class="btn btn-primary btn-md position-relative"
+                    >
+                      Update
+                    </a>
+
+                    <a
+                      href="/items/delete-products/<%= products.product_name %>"
+                      class="btn btn-danger btn-md position-relative"
+                      onclick="return confirm(`Are you sure you want to delete <%= products.product_name %>?`)"
+                    >
+                      Delete
+                    </a>
+                  </td>
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+<!-- End #main -->
