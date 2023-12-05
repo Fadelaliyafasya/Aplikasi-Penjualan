@@ -14,8 +14,13 @@
             </div>
             <% } %>
 
-            <form action="/data-admin/add" method="post" class="row g-3">
-              <div class="col-12">
+            <form
+              action="/data-admin/add"
+              method="post"
+              class="row g-3 needs-validation"
+              novalidate
+            >
+              <!-- <div class="col-12">
                 <label for="id" class="form-label">Id</label>
                 <input
                   type="text"
@@ -24,7 +29,7 @@
                   name="id_admin"
                   required
                 />
-              </div>
+              </div> -->
               <div class="col-12">
                 <label for="username" class="form-label">Username</label>
                 <input
@@ -34,7 +39,9 @@
                   name="username"
                   required
                 />
+                <div class="invalid-feedback">Please enter your username!</div>
               </div>
+
               <div class="col-12">
                 <label for="name" class="form-label">Name</label>
                 <input
@@ -44,7 +51,9 @@
                   name="nama"
                   required
                 />
+                <div class="invalid-feedback">Please enter your name!</div>
               </div>
+
               <div class="col-12">
                 <label for="email" class="form-label">Email</label>
                 <input
@@ -54,7 +63,9 @@
                   name="email"
                   required
                 />
+                <div class="invalid-feedback">Please enter your email!</div>
               </div>
+
               <div class="col-12">
                 <label for="mobile_phone" class="form-label"
                   >Mobile Phone</label
@@ -66,6 +77,21 @@
                   name="mobile_phone"
                   required
                 />
+                <div class="invalid-feedback">
+                  Please enter your mobile phone!
+                </div>
+              </div>
+
+              <div class="col-12">
+                <label for="password" class="form-label">Password</label>
+                <input
+                  type="password"
+                  name="password"
+                  class="form-control"
+                  id="yourPassword"
+                  required
+                />
+                <div class="invalid-feedback">Please enter your password!</div>
               </div>
               <div class="text-center">
                 <button type="submit" class="btn btn-primary">Submit</button>

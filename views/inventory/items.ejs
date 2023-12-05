@@ -17,18 +17,28 @@
         <div class="card">
           <div class="card-body">
             <h5 class="card-title">Data List Items</h5>
-            <a
-              href="/items/add"
-              class="btn btn-primary btn-md position-relative"
+            <div
+              style="
+                display: flex;
+                width: 100%;
+                justify-content: end;
+                margin-bottom: 12px;
+              "
             >
-              Add
-            </a>
+              <a
+                href="/items/add"
+                class="btn btn-primary btn-md position-relative"
+                >Add</a
+              >
+            </div>
+
             <table class="table table-hover datatable">
               <thead>
                 <tr>
                   <th scope="col">No</th>
                   <th scope="col">Product Id</th>
                   <th scope="col">Product Name</th>
+                  <th scope="col">Category</th>
                   <th scope="col">Stock</th>
                   <th scope="col">Price</th>
 
@@ -36,40 +46,34 @@
                 </tr>
               </thead>
               <tbody>
-                <% products.forEach((products, index) => { %>
-                <!-- scope="row" -->
+                <% products.forEach(function(product, index) { %>
                 <tr>
                   <td><%= index + 1 %></td>
-                  <td><%= products.product_id %></td>
-                  <td><%= products.product_name %></td>
-
-                  <td><%= products.stock_quantity %></td>
-                  <td><%= products.price %></td>
-
+                  <td><%= product.product_id %></td>
+                  <td><%= product.product_name %></td>
+                  <td><%= product.category %></td>
+                  <td><%= product.stock_quantity %></td>
+                  <td>Rp. <%= product.price %></td>
                   <td>
                     <a
-                      href="/items/detail-products/<%= products.product_name %>"
+                      href="/items/detail-products/<%= product.product_name %>"
                       class="btn btn-primary btn-md position-relative"
                       >Detail</a
                     >
-
                     <a
-                      href="/items/update-products/<%= products.product_name %>"
+                      href="/items/update-products/<%= product.product_name %>"
                       class="btn btn-primary btn-md position-relative"
+                      >Update</a
                     >
-                      Update
-                    </a>
-
                     <a
-                      href="/items/delete-products/<%= products.product_name %>"
+                      href="/items/delete-products/<%= product.product_name %>"
                       class="btn btn-danger btn-md position-relative"
-                      onclick="return confirm(`Are you sure you want to delete <%= products.product_name %>?`)"
+                      onclick="return confirm('Are you sure you want to delete <%= product.product_name %>?')"
+                      >Delete</a
                     >
-                      Delete
-                    </a>
                   </td>
                 </tr>
-                <% }) %>
+                <% }); %>
               </tbody>
             </table>
           </div>
