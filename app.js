@@ -1,5 +1,6 @@
 const express = require("express");
-// const multer = require('multer') // uploading image
+const multer = require("multer"); // uploading image
+const jwt = require("jsonwebtoken");
 const app = express();
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
@@ -15,6 +16,7 @@ const {
   searchAdmin,
   emailDuplicateCheck,
   updateAdmin,
+  duplicatePassword,
 } = require("./models/data_admins");
 
 const {
@@ -26,6 +28,9 @@ const {
   emailDuplicateCustomerCheck,
   updateCustomer,
   duplicateCustomerName,
+  duplicatePasswordCustomer,
+  duplicateUsernameCustomer,
+  totalCustomer,
 } = require("./models/data_customers");
 
 const {
@@ -34,6 +39,7 @@ const {
   addDataProducts,
   duplicateProductsName,
   deleteDataProducts,
+  totalProducts,
 } = require("./models/data_products");
 
 const host = "localhost";
@@ -42,14 +48,42 @@ const port = 3001;
 // static files
 app.use(expressLayouts);
 app.use(express.static("public"));
+app.use(express.static("uploads"));
 app.use(flash()); // mengaktifkan fitur flash
 app.use("/css", express.static(__dirname + "/public/assets/css"));
 app.use("/js", express.static(__dirname + "/public/assets/js"));
 app.use("/img", express.static(__dirname + "/publica/assets/img"));
-// const pool = require("./database.js");
 
 app.use(express.json()); // req.body
 app.use(express.urlencoded({ extended: true })); //menggunakan middleware express.urlencoded().
+
+// // multer
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     cb(null, "public/assets/img"); //  folder penyimpanan untuk gambar
+//   },
+//   filename: function (req, file, cb) {
+//     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+//     cb(
+//       null,
+//       file.fieldname + "-" + uniqueSuffix + "." + file.mimetype.split("/")[1]
+//     );
+//   },
+// });
+
+// const fileFilter = function (req, file, cb) {
+//   if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
+//     cb(null, true);
+//   } else {
+//     cb(new Error("Only JPEG and PNG files are allowed!"), false);
+//   }
+// };
+
+// const upload = multer({
+//   storage: storage,
+//   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+//   fileFilter: fileFilter,
+// });
 
 // config flash
 app.use(cookieParser("secret"));
@@ -66,10 +100,10 @@ app.use(
 app.set("view engine", "ejs");
 app.set("views", "./views");
 
-// ====================================Dashboard Area ====================================
+// ====================================Dashboard customer Area ====================================
 // default routes dasboard
 app.get("/", (req, res) => {
-  res.render("index", {
+  res.render("dashboard-customer/dashboard", {
     title: "VirtuVorgue",
     layout: "layout/core-index",
   });
@@ -83,6 +117,28 @@ app.get("/user", (req, res) => {
   });
 });
 // ==================================== End Dashboard Area ====================================
+
+// ==================================== Dashboard Admin Area ====================================
+// default routes dasboard
+app.get("/dashboard", async (req, res) => {
+  try {
+    const productName = req.query.product_name || null;
+    const productsCount = await totalProducts(productName);
+
+    const customerName = req.query.productName || null;
+    const customerCount = await totalCustomer(customerName);
+
+    res.render("index", {
+      title: "VirtuVorgue",
+      layout: "layout/core-index",
+      productsCount,
+      customerCount,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
 
 // ------------------------ Error ------------------------------------------
 app.get("/error", (req, res) => {
@@ -104,6 +160,101 @@ app.get("/cart", (req, res) => {
 // ------------------------ End Transcation ------------------------------------------
 
 // ================ MIDDLEWARE ADMIN ========================
+
+app.get("/login/admin", (req, res) => {
+  res.render("layout/login-page-admin", {
+    title: "VirtuVorgue - Login",
+    layout: "layout/login-page-admin",
+  });
+});
+
+// middleware untuk registrasi admin
+app.post(
+  "/register",
+  [
+    body("nama").custom(async (value) => {
+      const duplicate = await duplicateCustomerName(value);
+
+      if (duplicate) {
+        throw new Error("Name already registered");
+      }
+      return true;
+    }),
+    body("email").custom(async (value) => {
+      const emailDuplicate = await emailDuplicateCustomerCheck(value);
+      if (emailDuplicate) {
+        throw new Error("Email has been registered");
+      }
+      return true;
+    }),
+
+    body("password").custom(async (value) => {
+      const duplicate = await duplicatePasswordCustomer(value);
+      if (duplicate) {
+        throw new Error("Password has been registered");
+      }
+      return true;
+    }),
+    body("username").custom(async (value) => {
+      const duplicateUser = await duplicateUsernameCustomer(value);
+      if (duplicateUser) {
+        throw new Error("User has been registered");
+      }
+      return true;
+    }),
+    check("email", "Invalid email").isEmail(),
+    check("mobile_phone", "mobile phone number invalid").isMobilePhone("id-ID"),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.render("layout/register-page", {
+        title: "VirtuVorgue - Register Admin",
+        layout: "layout/register-page.ejs",
+        errors: errors.array(),
+      });
+    } else {
+      try {
+        console.log("Data yang dikirim: ", req.body);
+
+        // Gunakan fungsi addDataAdmin dari model basis data
+        const addedAdmin = await addDataCustomer(
+          req.body.username,
+          req.body.nama,
+          req.body.email,
+          req.body.mobile_phone,
+          req.body.password
+        );
+
+        if (addedAdmin) {
+          // Validasi panjang password
+          if (req.body.password.length < 6) {
+            req.flash(
+              "passwordLengthError",
+              "Password must be at least 6 characters"
+            );
+            res.redirect("/register");
+            return;
+          }
+
+          req.flash(
+            "successMessage",
+            "Data added successfully and you can login now"
+          );
+        } else {
+          throw new Error("Failed to add admin");
+        }
+      } catch (err) {
+        console.error(err.message);
+        req.flash("msg", err.message);
+        res.status(500).redirect("/register");
+        return;
+      }
+      res.redirect("/login");
+    }
+  }
+);
+
 // data-admin
 app.get("/data-admin", async (req, res) => {
   const admins = await fetchData();
@@ -161,11 +312,12 @@ app.post(
         // Gunakan fungsi addDataAdmin dari model basis data
         await addDataAdmin(
           // Ekstrak data dari tubuh permintaan
-          req.body.id_admin,
+          // req.body.id_admin,
           req.body.username,
           req.body.nama,
           req.body.email,
-          req.body.mobile_phone
+          req.body.mobile_phone,
+          req.body.passwords
         );
         req.flash("msg", "Data added successfully");
 
@@ -478,6 +630,67 @@ app.get("/products/sports", (req, res) => {
   });
 });
 
+app.get("/products/PC/add", (req, res) => {
+  res.render("products/add-product-pc", {
+    title: "VirtuVorgue - Products",
+    layout: "layout/core-index",
+  });
+});
+
+// multer
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "./uploads");
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.filename + "_" + Date.now()) + "_" + file.originalname;
+  },
+});
+
+const upload = multer({
+  storage: storage,
+}).single("image");
+
+app.post(
+  "/products/PC/add",
+  upload,
+  [
+    body("category").notEmpty().withMessage("Category is required"),
+    body("product_name").custom(async (value) => {
+      const nameDuplicate = await duplicateProductsName(value);
+      if (nameDuplicate) {
+        throw new Error("Product has been registered");
+      }
+      return true;
+    }),
+  ],
+
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      // Tangani kesalahan validasi...
+    } else {
+      try {
+        await addDataProducts(
+          req.body.product_name,
+          req.body.description,
+          req.body.price,
+          req.body.stock_quantity,
+          req.body.category,
+          req.file.filename
+        );
+
+        req.flash("msg", "Data added successfully");
+        res.redirect("/items");
+      } catch (err) {
+        console.error(err);
+        req.flash("msg", "An error occurred while adding data");
+        res.status(500);
+      }
+    }
+  }
+);
+
 app.get("/categories", (req, res) => {
   res.render("products/categories", {
     title: "VirtuVorgue - Categories",
@@ -508,14 +721,15 @@ app.get("/items/add", async (req, res) => {
 app.post(
   "/items/add",
   [
-    body("product_id").custom(async (value) => {
-      const duplicate = await duplicateIdProductsCheck(value);
+    // body("product_id").custom(async (value) => {
+    //   const duplicate = await duplicateIdProductsCheck(value);
 
-      if (duplicate) {
-        throw new Error("ID already registered");
-      }
-      return true;
-    }),
+    //   if (duplicate) {
+    //     throw new Error("ID already registered");
+    //   }
+    //   return true;
+    // }),
+    body("category").notEmpty().withMessage("Category is required"),
     body("product_name").custom(async (value) => {
       const nameDuplicate = await duplicateProductsName(value);
       if (nameDuplicate) {
@@ -524,33 +738,25 @@ app.post(
       return true;
     }),
   ],
+
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      res.render("inventory/add-items", {
-        title: "VirtuVorgue - Add Items",
-        layout: "layout/core-index.ejs",
-        errors: errors.array(),
-      });
+      // Tangani kesalahan validasi...
     } else {
       try {
-        console.log("Data yang dikirim: ", req.body);
-
-        // Gunakan fungsi addDataAdmin dari model basis data
         await addDataProducts(
-          // Ekstrak data dari tubuh permintaan
-          req.body.product_id,
           req.body.product_name,
           req.body.description,
           req.body.price,
-          req.body.stock_quantity
+          req.body.stock_quantity,
+          req.body.category
         );
-        req.flash("msg", "Data added successfully");
 
-        // Redirect ke halaman data-admin untuk melihat data yang diperbarui
+        req.flash("msg", "Data added successfully");
         res.redirect("/items");
       } catch (err) {
-        console.error(err.msg);
+        console.error(err);
         req.flash("msg", "An error occurred while adding data");
         res.status(500);
       }
@@ -559,8 +765,6 @@ app.post(
 );
 
 // middleware untuk detail items
-
-// detail items
 app.get("/items/detail-products/:product_name", async (req, res) => {
   try {
     const productName = req.params.product_name;
@@ -579,10 +783,10 @@ app.get("/items/detail-products/:product_name", async (req, res) => {
   }
 });
 
-// delete products b
-app.get("/items/delete-products/:product_id", async (req, res) => {
+// delete products items
+app.get("/items/delete-products/:product_name", async (req, res) => {
   try {
-    const deleteProducts = await deleteDataProducts(req.params.product_id);
+    const deleteProducts = await deleteDataProducts(req.params.product_name);
 
     if (!deleteProducts) {
       req.flash("msg", "Data not found or has been deleted");
@@ -602,18 +806,21 @@ app.get("/items/delete-products/:product_id", async (req, res) => {
 
 // ==================================== Register & login ====================================
 app.get("/register", (req, res) => {
-  res.render("register", {
+  res.render("layout/register-page", {
     title: "VirtuVorgue - Register",
     layout: "layout/register-page",
   });
 });
 
+app.post("/register", (req, res) => {});
+
 app.get("/login", (req, res) => {
-  res.render("login", {
+  res.render("layout/login-page", {
     title: "VirtuVorgue - Login",
     layout: "layout/login-page",
   });
 });
+
 // ==================================== End Register & login ====================================
 
 // ==================================== Products ====================================
