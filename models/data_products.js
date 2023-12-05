@@ -28,24 +28,44 @@ const fetchProductsById = async (product_id) => {
 
 // Add new Products
 const addDataProducts = async (
-  product_id,
   product_name,
   description,
   price,
-  stock_quantity
+  stock_quantity,
+  category
 ) => {
   const connection = await pool.connect();
 
   const query =
-    "INSERT INTO products (product_id, product_name, description, price, stock_quantity) VALUES ($1, $2, $3, $4, $5) RETURNING *";
+    "INSERT INTO products (product_name, description, price, stock_quantity, category) VALUES ($1, $2, $3, $4, $5) RETURNING *";
 
-  const values = [product_id, product_name, description, price, stock_quantity];
+  const values = [product_name, description, price, stock_quantity, category];
 
   const result = await connection.query(query, values);
 
   connection.release();
 
   return result.rows[0];
+};
+
+const totalProducts = async (product_name) => {
+  const connection = await pool.connect();
+
+  try {
+    let query = "SELECT COUNT(*) AS total_produk FROM products";
+    const values = [];
+
+    if (product_name) {
+      query += " WHERE product_name = $1";
+      values.push(product_name);
+    }
+
+    const result = await connection.query(query, values);
+
+    return result.rows[0].total_produk;
+  } finally {
+    connection.release();
+  }
 };
 
 // Fungsi untuk Cek ID  products
@@ -114,12 +134,12 @@ const updateProducts = async (newContact) => {
 };
 
 // Delete-products
-const deleteDataProducts = async (product_id) => {
+const deleteDataProducts = async (product_name) => {
   const connection = await pool.connect();
   try {
     const query = "DELETE FROM products WHERE product_name = $1 RETURNING *";
 
-    const result = await connection.query(query, [product_id]);
+    const result = await connection.query(query, [product_name]);
 
     return result.rows[0]; // Mengembalikan baris yang dihapus
   } finally {
@@ -147,4 +167,5 @@ module.exports = {
   deleteDataProducts,
   duplicateProductsName,
   updateProducts,
+  totalProducts,
 };

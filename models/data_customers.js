@@ -1,4 +1,5 @@
 const pool = require("../models/database.js");
+const bcrypt = require("bcrypt");
 
 // Fungsi untuk ambil data dari database PostgreSQL
 const fetchDataCustomers = async () => {
@@ -27,25 +28,55 @@ const fetchCustomerById = async (id_customer) => {
 };
 
 // Add new Customer
+// Add new Admin
 const addDataCustomer = async (
-  id_customer,
   username,
   nama,
   email,
-  mobile_phone
+  mobile_phone,
+  password
 ) => {
   const connection = await pool.connect();
 
-  const query =
-    "INSERT INTO data_customer (id_customer, username, nama, email, mobile_phone) VALUES ($1, $2, $3, $4, $5) RETURNING *";
+  try {
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-  const values = [id_customer, username, nama, email, mobile_phone];
+    const query =
+      "INSERT INTO data_customer (username, nama, email, mobile_phone, password) VALUES ($1, $2, $3, $4, $5) RETURNING *";
 
-  const result = await connection.query(query, values);
+    const values = [username, nama, email, mobile_phone, hashedPassword];
 
-  connection.release();
+    const result = await connection.query(query, values);
 
-  return result.rows[0];
+    return result.rows[0];
+  } catch (error) {
+    // Handle error appropriately, for example, log the error
+    console.error(error);
+    throw new Error("An error occurred while adding data");
+  } finally {
+    connection.release();
+  }
+};
+
+const totalCustomer = async (nama) => {
+  const connection = await pool.connect();
+
+  try {
+    let query = "SELECT COUNT(*) AS total_customer FROM data_customer";
+    const values = [];
+
+    if (nama) {
+      query += " WHERE nama = $1";
+      values.push(nama);
+    }
+
+    const result = await connection.query(query, values);
+
+    return result.rows[0].total_customer;
+  } finally {
+    connection.release();
+  }
 };
 
 // Fungsi untuk Cek ID  data_customer
@@ -89,6 +120,18 @@ const duplicateIdCustomerCheck = async (id_customer) => {
 const duplicateCustomerName = async (nama) => {
   const customers = await fetchDataCustomers();
   return customers.find((data_customer) => data_customer.nama === nama);
+};
+
+// duplicate password check
+const duplicatePasswordCustomer = async (password) => {
+  const customers = await fetchDataCustomers();
+  return customers.find((data_customer) => data_customer.password === password);
+};
+
+// duplicate username check
+const duplicateUsernameCustomer = async (username) => {
+  const customers = await fetchDataCustomers();
+  return customers.find((data_customer) => data_customer.username === username);
 };
 
 // email duplicate check
@@ -151,4 +194,7 @@ module.exports = {
   emailDuplicateCustomerCheck,
   updateCustomer,
   duplicateCustomerName,
+  duplicatePasswordCustomer,
+  duplicateUsernameCustomer,
+  totalCustomer,
 };

@@ -1,4 +1,5 @@
 const pool = require("../models/database.js");
+const bcrypt = require("bcrypt");
 
 // Fungsi untuk ambil data dari database PostgreSQL
 const fetchData = async () => {
@@ -15,11 +16,11 @@ const fetchData = async () => {
   return admins;
 };
 
-const fetchAdminById = async (id_admin) => {
+const fetchAdminById = async (nama) => {
   const connection = await pool.connect();
 
-  const query = "SELECT * FROM data_admin WHERE id_admin = $1";
-  const result = await connection.query(query, [id_admin]);
+  const query = "SELECT * FROM data_admin WHERE nama = $3";
+  const result = await connection.query(query, [nama]);
 
   connection.release();
 
@@ -27,19 +28,29 @@ const fetchAdminById = async (id_admin) => {
 };
 
 // Add new Admin
-const addDataAdmin = async (id_admin, username, nama, email, mobile_phone) => {
+// Add new Admin
+const addDataAdmin = async (username, nama, email, mobile_phone, password) => {
   const connection = await pool.connect();
 
-  const query =
-    "INSERT INTO data_admin (id_admin, username, nama, email, mobile_phone) VALUES ($1, $2, $3, $4, $5) RETURNING *";
+  try {
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-  const values = [id_admin, username, nama, email, mobile_phone];
+    const query =
+      "INSERT INTO data_admin (username, nama, email, mobile_phone, password) VALUES ($1, $2, $3, $4, $5) RETURNING *";
 
-  const result = await connection.query(query, values);
+    const values = [username, nama, email, mobile_phone, hashedPassword];
 
-  connection.release();
+    const result = await connection.query(query, values);
 
-  return result.rows[0];
+    return result.rows[0];
+  } catch (error) {
+    // Handle error appropriately, for example, log the error
+    console.error(error);
+    throw new Error("An error occurred while adding data");
+  } finally {
+    connection.release();
+  }
 };
 
 // Fungsi untuk Cek ID  data_admin
@@ -81,6 +92,12 @@ const duplicateIdCheck = async (id_admin) => {
 const duplicateName = async (nama) => {
   const admins = await fetchData();
   return admins.find((data_admin) => data_admin.nama === nama);
+};
+
+// duplicate password check
+const duplicatePassword = async (password) => {
+  const admins = await fetchData();
+  return admins.find((data_admin) => data_admin.password === password);
 };
 
 // email duplicate check
@@ -141,4 +158,5 @@ module.exports = {
   emailDuplicateCheck,
   updateAdmin,
   duplicateName,
+  duplicatePassword,
 };
