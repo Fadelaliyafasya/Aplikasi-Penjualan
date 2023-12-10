@@ -1,18 +1,46 @@
 const pool = require("../models/database.js");
 
 // Fungsi untuk ambil data dari database PostgreSQL
+// const fetchDataProducts = async () => {
+//   const connection = await pool.connect();
+
+//   const query = `SELECT * FROM products`;
+
+//   const results = await connection.query(query);
+
+//   connection.release();
+
+//   const products = results.rows;
+
+//   return products;
+// };
+
 const fetchDataProducts = async () => {
   const connection = await pool.connect();
 
-  const query = `SELECT * FROM products`;
+  try {
+    const query = "SELECT * FROM products";
 
-  const results = await connection.query(query);
+    const results = await connection.query(query);
 
-  connection.release();
+    const products = results.rows.map((product) => {
+      // Format harga sebagai Rupiah
+      const formattedPrice = product.price.toLocaleString("id-ID", {
+        style: "currency",
+        currency: "IDR",
+      });
 
-  const products = results.rows;
+      // Kembalikan produk dengan harga yang diformat
+      return {
+        ...product,
+        price: formattedPrice,
+      };
+    });
 
-  return products;
+    return products;
+  } finally {
+    connection.release();
+  }
 };
 
 const fetchProductsById = async (product_id) => {
@@ -32,14 +60,22 @@ const addDataProducts = async (
   description,
   price,
   stock_quantity,
+  image,
   category
 ) => {
   const connection = await pool.connect();
 
   const query =
-    "INSERT INTO products (product_name, description, price, stock_quantity, category) VALUES ($1, $2, $3, $4, $5) RETURNING *";
+    "INSERT INTO products (product_name, description, price, stock_quantity, image, category) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *";
 
-  const values = [product_name, description, price, stock_quantity, category];
+  const values = [
+    product_name,
+    description,
+    price,
+    stock_quantity,
+    image,
+    category,
+  ];
 
   const result = await connection.query(query, values);
 

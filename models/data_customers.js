@@ -1,7 +1,7 @@
 const pool = require("../models/database.js");
 const bcrypt = require("bcrypt");
 
-// Fungsi untuk ambil data dari database PostgreSQL
+// Fungsi untuk ambil semua data customer dari database PostgreSQL
 const fetchDataCustomers = async () => {
   const connection = await pool.connect();
 
@@ -15,6 +15,56 @@ const fetchDataCustomers = async () => {
 
   return customers;
 };
+
+// ambil data username dan password saja
+const fetchCustomer = async (username, password) => {
+  const connection = await pool.connect();
+
+  const query = `SELECT * FROM data_customer WHERE username = $1`;
+
+  try {
+    const results = await connection.query(query, [username]);
+
+    if (results.rows.length === 0) {
+      return null; // User tidak ditemukan
+    }
+
+    const user = results.rows[0];
+
+    // Membandingkan password yang di-hash dengan bcrypt
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return null; // Password tidak valid
+    }
+
+    return user;
+  } catch (error) {
+    console.error(error);
+    throw error; // Melemparkan error untuk ditangani di atas
+  } finally {
+    connection.release();
+  }
+};
+
+// const fetchCustomer = async (username, password) => {
+//   const connection = await pool.connect();
+
+//   // Ganti query untuk mencocokkan dengan kolom username dan password di database
+//   const query = `SELECT * FROM data_customer WHERE username = $1 AND password = $2`;
+
+//   const results = await connection.query(query, [username, password]);
+
+//   connection.release();
+
+//   const user = results.rows[0];
+//   if (!user || !(await bcrypt.compare(password, user.password))) {
+//     return null;
+//   }
+//   console.log("Query Result:", results.rows);
+
+//   return user;
+// };
 
 const fetchCustomerById = async (id_customer) => {
   const connection = await pool.connect();
@@ -197,4 +247,5 @@ module.exports = {
   duplicatePasswordCustomer,
   duplicateUsernameCustomer,
   totalCustomer,
+  fetchCustomer,
 };
