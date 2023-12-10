@@ -29,7 +29,7 @@
                 href="/data-admin/add"
                 class="btn btn-primary btn-md position-relative"
               >
-                Add
+                Add Account
               </a>
             </div>
             <table class="table table-hover datatable">
@@ -43,30 +43,30 @@
                 </tr>
               </thead>
               <tbody>
-                <% admins.forEach((data_admin, index) => { %>
+                <% userAdmin.forEach((data_admin, index) => { %>
                 <!-- scope="row" -->
                 <tr>
                   <td><%= index + 1 %></td>
-                  <td><%= data_admin.id_admin %></td>
-                  <td><%= data_admin.nama %></td>
+                  <td><%= data_admin.user_id %></td>
+                  <td><%= data_admin.name %></td>
                   <td><%= data_admin.email %></td>
 
                   <td>
                     <a
-                      href="/data-admin/detail-admin/<%= data_admin.id_admin %>"
+                      href="/data-admin/detail-admin/<%= data_admin.user_id %>"
                       class="btn btn-primary btn-md position-relative"
                       >Detail</a
                     >
 
                     <a
-                      href="/data-admin/update-admin/<%= data_admin.id_admin %>"
+                      href="/data-admin/update-admin/<%= data_admin.user_id %>"
                       class="btn btn-primary btn-md position-relative"
                     >
                       Update
                     </a>
 
                     <a
-                      href="/data-admin/delete-admin/<%= data_admin.id_admin %>"
+                      href="/data-admin/delete-admin/<%= data_admin.user_id %>"
                       class="btn btn-danger btn-md position-relative"
                       onclick="return confirm(`Are you sure you want to delete <%= data_admin.nama %>?`)"
                     >

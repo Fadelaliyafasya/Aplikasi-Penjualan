@@ -53,7 +53,10 @@
                 class="col-lg-4 col-md-6 d-flex flex-column align-items-center justify-content-center"
               >
                 <div class="d-flex justify-content-center py-4">
-                  <a href="/" class="logo d-flex align-items-center w-auto">
+                  <a
+                    href="/register"
+                    class="logo d-flex align-items-center w-auto"
+                  >
                     <img src="/assets/img/logo.png" alt="" />
                     <span class="d-none d-lg-block">VirtuVorgue</span>
                   </a>
@@ -81,20 +84,21 @@
                           <% }) %>
                         </ul>
                       </div>
-                      <% } %> <% if (typeof successMessage !== 'undefined' &&
-                      successMessage !== null) { %>
+                      <% } else { %> <% if (typeof successMessage !==
+                      'undefined' && successMessage !== null) { %>
                       <div class="alert alert-success" role="alert">
                         <%= successMessage %>
                       </div>
-                      <% } %>
+                      <% } %> <% } %>
                     </div>
 
                     <div>
-                    <% if (typeof passwordLengthError !== 'undefined' && passwordLengthError !== null) { %>
+                      <% if (typeof passwordLengthError !== 'undefined' &&
+                      passwordLengthError !== null) { %>
                       <div class="alert alert-danger" role="alert">
                         <%= passwordLengthError %>
                       </div>
-                    <% } %>
+                      <% } %>
                     </div>
                     <form
                       method="post"
@@ -217,10 +221,10 @@
                           Already have an account?
                           <a href="/login">Log in</a>
                         </p>
-                        <br>
-                        <p class="small mb-0">
+
+                        <!-- <p class="small mb-0">
                           <a href="/login">Back to the previous main page
-                          </p>
+                          </p> -->
                       </div>
                     </form>
                   </div>
@@ -236,8 +240,8 @@
     <a
       href="#"
       class="back-to-top d-flex align-items-center justify-content-center"
-      ><i class="bi bi-arrow-up-short"></i
-    ></a>]
+      ><i class="bi bi-arrow-up-short"></i></a
+    >]
 
     <!-- Vendor JS Files -->
     <script src="/assets/vendor/apexcharts/apexcharts.min.js"></script>

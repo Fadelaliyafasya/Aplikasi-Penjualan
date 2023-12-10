@@ -4,37 +4,92 @@
       <div class="col-lg-12">
         <div class="card">
           <div class="card-body">
-            <h5 class="card-title">Detail</h5>
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th scope="col">No</th>
-                  <th scope="col">Product Id</th>
-                  <th scope="col">Product Name</th>
-                  <th scope="col">Description</th>
-                  <th scope="col">Stock</th>
-                  <th scope="col">Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% if (products) { %>
-                <!-- Check if customer is defined -->
-                <tr>
-                  <td>1</td>
-                  <td><%= products.product_id %></td>
-                  <td><%= products.product_name %></td>
-                  <td><%= products.description %></td>
-                  <td><%= products.stock_quantity %></td>
-                  <td>Rp. <%= products.price %></td>
-                </tr>
+            <!-- <h5 class="card-title">Detail</h5> -->
+            <div class="tab-content pt-2">
+              <% if (products) { %>
+              <div
+                class="tab-pane fade show active profile-overview"
+                id="profile-overview"
+              >
+                <h5 class="card-title">Description</h5>
+                <p class="small fst" style="font-size: 18px">
+                  <%= products.description %>
+                </p>
+
+                <h5 class="card-title">--------------------</h5>
+
+                <div class="row">
+                  <div
+                    class="col-lg-3 col-md-4 label"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    Product ID
+                  </div>
+
+                  <div
+                    class="col-lg-9 col-md-8"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    : <%= products.product_id %>
+                  </div>
+                </div>
+                <br />
+
+                <div class="row">
+                  <div
+                    class="col-lg-3 col-md-4 label"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    Product Name
+                  </div>
+
+                  <div
+                    class="col-lg-9 col-md-8"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    : <%= products.product_name %>
+                  </div>
+                </div>
+                <br />
+                <div class="row">
+                  <div
+                    class="col-lg-3 col-md-4 label"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    Category
+                  </div>
+                  <div
+                    class="col-lg-9 col-md-8"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    : <%= products.category %>
+                  </div>
+                </div>
+                <br />
+                <div class="row">
+                  <div
+                    class="col-lg-3 col-md-4 label"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    Price
+                  </div>
+                  <div
+                    class="col-lg-9 col-md-8"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    : Rp. <%= products.price %>
+                  </div>
+                </div>
+                <br />
                 <% } else { %>
-                <!-- Handle case when customer is not defined -->
-                <tr>
-                  <td colspan="6">Product not found</td>
-                </tr>
+                <p style="font-family: Poppins; font-size: 18px">
+                  Product not found
+                </p>
                 <% } %>
-              </tbody>
-            </table>
+              </div>
+            </div>
+            <!-- End Bordered Tabs -->
+
             <a href="/items" class="btn btn-primary">Back to previous page</a>
           </div>
         </div>

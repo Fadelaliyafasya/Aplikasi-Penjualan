@@ -14,7 +14,12 @@
             </div>
             <% } %>
 
-            <form action="/items/add" method="post" class="row g-3">
+            <form
+              action="/items/add"
+              method="post"
+              class="row g-3"
+              enctype="multipart/form-data"
+            >
               <div class="col-12">
                 <label for="username" class="form-label">Product Name</label>
                 <input
@@ -39,7 +44,7 @@
               <div class="col-12">
                 <label for="price" class="form-label">Price</label>
                 <input
-                  type="text"
+                  type="number"
                   class="form-control"
                   id="price"
                   name="price"
@@ -56,18 +61,16 @@
                   required
                 />
               </div>
-              <!-- <div class="col-12">
+              <div class="col-12">
                 <label for="image" class="form-label">Product Image</label>
                 <input
                   type="file"
                   class="form-control"
                   id="image"
                   name="image"
-                  placeholder="File"
-                  accept="image/*"
                   required
                 />
-              </div> -->
+              </div>
 
               <div class="col-12">
                 <label for="category" class="form-label">Category</label>

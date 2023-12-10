@@ -4,7 +4,7 @@
       <div class="col-lg-8">
         <div class="card">
           <div class="card-body">
-            <h5 class="card-title">Form Add Admin</h5>
+            <h5 class="card-title">Form Add Admin Account</h5>
 
             <% if(typeof errors != "undefined") { %>
             <div class="alert alert-primary" role="alert">
@@ -48,10 +48,18 @@
                   type="text"
                   class="form-control"
                   id="name"
-                  name="nama"
+                  name="name"
                   required
                 />
                 <div class="invalid-feedback">Please enter your name!</div>
+              </div>
+
+              <div class="col-12">
+                <label for="role" class="form-label">Role</label>
+                <select class="form-control" id="role" name="role" required>
+                  <option value="2">Admin</option>
+                </select>
+                <div class="invalid-feedback">Please enter your role</div>
               </div>
 
               <div class="col-12">
@@ -65,6 +73,19 @@
                 />
                 <div class="invalid-feedback">Please enter your email!</div>
               </div>
+
+              <!-- <div class="col-12">
+                <label for="role" class="form-label">Role</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="role"
+                  name="role"
+                  value="2"
+                  required
+                />
+                <div class="invalid-feedback">Please enter your role</div>
+              </div> -->
 
               <div class="col-12">
                 <label for="mobile_phone" class="form-label"

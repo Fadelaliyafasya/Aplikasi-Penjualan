@@ -4,37 +4,84 @@
       <div class="col-lg-12">
         <div class="card">
           <div class="card-body">
-            <h5 class="card-title">Detail</h5>
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th scope="col">No</th>
-                  <th scope="col">ID Customer</th>
-                  <th scope="col">Username</th>
-                  <th scope="col">Name</th>
-                  <th scope="col">Email</th>
-                  <th scope="col">Mobile Phone</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% if (customer) { %>
-                <!-- Check if customer is defined -->
-                <tr>
-                  <td>1</td>
-                  <td><%= customer.id_customer %></td>
-                  <td><%= customer.username %></td>
-                  <td><%= customer.nama %></td>
-                  <td><%= customer.email %></td>
-                  <td><%= customer.mobile_phone %></td>
-                </tr>
+            <h5 class="card-title">Detail Customer</h5>
+            <div class="tab-content pt-2">
+              <% if (customer) { %>
+              <div
+                class="tab-pane fade show active profile-overview"
+                id="profile-overview"
+              >
+                <div class="row">
+                  <div
+                    class="col-lg-3 col-md-4 label"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    Username
+                  </div>
+
+                  <div
+                    class="col-lg-9 col-md-8"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    : <%= customer.username %>
+                  </div>
+                </div>
+                <br />
+
+                <div class="row">
+                  <div
+                    class="col-lg-3 col-md-4 label"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    Full Name
+                  </div>
+
+                  <div
+                    class="col-lg-9 col-md-8"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    : <%= customer.name %>
+                  </div>
+                </div>
+                <br />
+                <div class="row">
+                  <div
+                    class="col-lg-3 col-md-4 label"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    Email
+                  </div>
+                  <div
+                    class="col-lg-9 col-md-8"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    : <%= customer.email %>
+                  </div>
+                </div>
+                <br />
+                <div class="row">
+                  <div
+                    class="col-lg-3 col-md-4 label"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    Mobile Phone
+                  </div>
+                  <div
+                    class="col-lg-9 col-md-8"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    : <%= customer.mobile_phone %>
+                  </div>
+                </div>
+                <br />
                 <% } else { %>
-                <!-- Handle case when customer is not defined -->
-                <tr>
-                  <td colspan="6">Customer not found</td>
-                </tr>
+                <p style="font-family: Poppins; font-size: 18px">
+                  Data not Found
+                </p>
                 <% } %>
-              </tbody>
-            </table>
+              </div>
+            </div>
+
             <a href="/data-customer" class="btn btn-primary"
               >Back to previous page</a
             >

@@ -1,0 +1,128 @@
+<main id="main" class="main">
+  <div class="pagetitle">
+    <h1>Shopping</h1>
+    <nav>
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item active">Shopping</li>
+      </ol>
+    </nav>
+    <br />
+  </div>
+  <!-- End Page Title -->
+
+  <section class="section dashboard">
+    <div class="row">
+      <!-- Left side columns -->
+      <div class="col-lg-12">
+        <div class="row">
+          <!-- Customers Card -->
+          <div class="col-xxl-4 col-xl-12">
+            <div class="card info-card customers-card">
+              <div class="card-body">
+                <h4 class="card-title">Shopping</h4>
+
+                <div class="d-flex align-items-center">
+                  <!-- Disini category boxes for loop -->
+                  <div
+                    data-bs-toggle="modal"
+                    data-bs-target="#verticalycentered"
+                    class="category-boxes-products"
+                  >
+                    <div class="row">
+                      <% if (products.length) { %> <% for(let i = 0; i <
+                      products.length; i++) { %>
+                      <div class="category-box-products col-lg-4">
+                        <img
+                          src="/assets/img/uploads/<%= products[i].image %>"
+                          alt="<%= products[i].product_name %>"
+                        />
+                        <div class="category-name-products">
+                          <%= products[i].product_name %>
+                        </div>
+
+                        <div class="category-name-products-price">
+                          <%= products[i].price %>
+                        </div>
+
+                        <div
+                          style="
+                            display: flex;
+                            width: 100%;
+                            justify-content: end;
+                            margin-bottom: 12px;
+                          "
+                        >
+                          <a
+                            class="btn btn-primary btn-md position-relative"
+                            data-bs-toggle="modal"
+                            data-bs-target="#verticalycentered<%= i %>"
+                          >
+                            Detail
+                          </a>
+
+                          <div
+                            class="modal fade"
+                            id="verticalycentered<%= i %>"
+                            tabindex="-1"
+                          >
+                            <div class="modal-dialog modal-dialog-centered">
+                              <div class="modal-content">
+                                <div class="modal-header">
+                                  <h5 class="modal-title">
+                                    Product Detail
+                                    <strong
+                                      ><%= products[i].product_name %></strong
+                                    >
+                                  </h5>
+                                  <button
+                                    type="button"
+                                    class="btn-close"
+                                    data-bs-dismiss="modal"
+                                    aria-label="Close"
+                                  ></button>
+                                </div>
+
+                                <div
+                                  class="modal-body"
+                                  style="font-family: Poppins; font-size: 15px"
+                                >
+                                  <%= products[i].description %>
+                                </div>
+                                <div class="modal-footer">
+                                  <button
+                                    type="button"
+                                    class="btn btn-secondary"
+                                    data-bs-dismiss="modal"
+                                  >
+                                    Close
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <a
+                            href="/cart"
+                            class="btn btn-primary btn-md position-relative"
+                            style="margin-left: 10px"
+                            >Add to cart</a
+                          >
+                        </div>
+                      </div>
+                      <% } %> <% } else { %>
+                      <div class="card-title" style="text-align: center">
+                        No Products Available
+                      </div>
+                      <% } %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>

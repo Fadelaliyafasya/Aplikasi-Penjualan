@@ -4,38 +4,87 @@
       <div class="col-lg-12">
         <div class="card">
           <div class="card-body">
-            <h5 class="card-title">Detail</h5>
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th scope="col">No</th>
-                  <th scope="col">ID Admin</th>
-                  <th scope="col">Username</th>
-                  <th scope="col">Name</th>
-                  <th scope="col">Email</th>
-                  <th scope="col">Mobile Phone</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% if (admin) { %>
-                  <!-- Check if admin is defined -->
-                  <tr>
-                    <td>1</td>
-                    <td><%= admin.id_admin %></td>
-                    <td><%= admin.username %></td>
-                    <td><%= admin.nama %></td>
-                    <td><%= admin.email %></td>
-                    <td><%= admin.mobile_phone %></td>
-                  </tr>
+            <h5 class="card-title">Detail Admin</h5>
+            <div class="tab-content pt-2">
+              <% if (admin) { %>
+              <div
+                class="tab-pane fade show active profile-overview"
+                id="profile-overview"
+              >
+                <div class="row">
+                  <div
+                    class="col-lg-3 col-md-4 label"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    Username
+                  </div>
+
+                  <div
+                    class="col-lg-9 col-md-8"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    : <%= admin.username %>
+                  </div>
+                </div>
+                <br />
+
+                <div class="row">
+                  <div
+                    class="col-lg-3 col-md-4 label"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    Full Name
+                  </div>
+
+                  <div
+                    class="col-lg-9 col-md-8"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    : <%= admin.name %>
+                  </div>
+                </div>
+                <br />
+                <div class="row">
+                  <div
+                    class="col-lg-3 col-md-4 label"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    Email
+                  </div>
+                  <div
+                    class="col-lg-9 col-md-8"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    : <%= admin.email %>
+                  </div>
+                </div>
+                <br />
+                <div class="row">
+                  <div
+                    class="col-lg-3 col-md-4 label"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    Mobile Phone
+                  </div>
+                  <div
+                    class="col-lg-9 col-md-8"
+                    style="font-family: Poppins; font-size: 18px"
+                  >
+                    : <%= admin.mobile_phone %>
+                  </div>
+                </div>
+                <br />
                 <% } else { %>
-                  <!-- Handle case when admin is not defined -->
-                  <tr>
-                    <td colspan="6">Admin not found</td>
-                  </tr>
+                <p style="font-family: Poppins; font-size: 18px">
+                  Data not Found
+                </p>
                 <% } %>
-              </tbody>
-            </table>
-            <a href="/data-admin" class="btn btn-primary">Back to admin page</a>
+              </div>
+            </div>
+
+            <a href="/data-admin" class="btn btn-primary"
+              >Back to previous page</a
+            >
           </div>
         </div>
       </div>
