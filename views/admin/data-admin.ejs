@@ -11,6 +11,13 @@
   </div>
   <!-- End Page Title -->
 
+  <% if (message.length !=0) { if (message[0].alert=='success' ) { %>
+  <div class="alert alert-success" role="alert"><%= message[0].message %></div>
+  <% } else if (message[0].alert=='warning' ) { %>
+  <div class="alert alert-warning" role="alert"><%= message[0].message %></div>
+  <% } else { %>
+  <div class="alert alert-warning" role="alert"><%= message[0].message %></div>
+  <% } } %>
   <section class="section">
     <div class="row">
       <div class="col-lg-12">
@@ -38,7 +45,7 @@
                   <th scope="col">No</th>
                   <th scope="col">ID Admin</th>
                   <th scope="col">Name</th>
-                  <th scope="col">Email</th>
+
                   <th scope="col">Action</th>
                 </tr>
               </thead>
@@ -49,7 +56,6 @@
                   <td><%= index + 1 %></td>
                   <td><%= data_admin.user_id %></td>
                   <td><%= data_admin.name %></td>
-                  <td><%= data_admin.email %></td>
 
                   <td>
                     <a
@@ -68,7 +74,7 @@
                     <a
                       href="/data-admin/delete-admin/<%= data_admin.user_id %>"
                       class="btn btn-danger btn-md position-relative"
-                      onclick="return confirm(`Are you sure you want to delete <%= data_admin.nama %>?`)"
+                      onclick="return confirm(`Are you sure you want to delete <%= data_admin.name %>?`)"
                     >
                       Delete
                     </a>

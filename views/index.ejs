@@ -11,7 +11,19 @@
       <br>
       
     </div><!-- End Page Title -->
-
+    <% if (message.length !=0) { if (message[0].alert=='success' ) { %>
+      <div class="alert alert-success" role="alert">
+          <%= message[0].message %>
+      </div>
+  <% } else if (message[0].alert=='warning' ) { %>
+      <div class="alert alert-warning" role="alert">
+          <%= message[0].message %>
+      </div>
+  <% } else { %>
+      <div class="alert alert-warning" role="alert">
+          <%= message[0].message %>
+      </div>
+<% } } %>
 
     <section class="section dashboard">
       <div class="row">
@@ -88,6 +100,27 @@
                     </div>
                     <div class="ps-3">
                       <h6><%= userCount %></h6>
+                       <span class="text-muted small pt-2 ps-1">Peoples</span>
+                    </div>
+                  </div>
+
+                  </div>
+                </div>
+            </div>
+
+            <!-- Customers Card -->
+            <div class="col-xxl-4 col-xl-12">
+
+              <div class="card info-card customers-card">
+                <div class="card-body">
+                  <h5 class="card-title">Admins <span>| Registered</span></h5>
+
+                  <div class="d-flex align-items-center">
+                    <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                      <i class="bi bi-people"></i>
+                    </div>
+                    <div class="ps-3">
+                      <h6><%= adminCount %></h6>
                        <span class="text-muted small pt-2 ps-1">Peoples</span>
                     </div>
                   </div>

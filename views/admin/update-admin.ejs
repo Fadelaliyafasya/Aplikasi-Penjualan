@@ -20,8 +20,8 @@
 
                   <form action="/data-admin/update" method="post" class="row g-3">
                     <div class="col-12">
-                      <label for="id_admin" class="form-label">ID Admin</label>
-                      <input type="text" class="form-control" id="id_admin" name="id_admin" value="<%= admins.id_admin ? admins.id_admin : '' %>" required>
+                      <label for="user_id" class="form-label">ID Admin</label>
+                      <input type="text" class="form-control" id="user_id" name="user_id" value="<%= admins.user_id ? admins.user_id : '' %>" required>
                     </div>
 
                     <div class="col-12">
@@ -30,7 +30,7 @@
                     </div>
                     <div class="col-12">
                       <label for="name" class="form-label">Name</label>
-                      <input type="text" class="form-control" id="name" name="nama"  value="<%= admins.nama ? admins.nama : ''  %>"  required>
+                      <input type="text" class="form-control" id="name" name="name"  value="<%= admins.name ? admins.name : ''  %>"  required>
                     </div>
                     <div class="col-12">
                       <label for="email" class="form-label">Email</label>
@@ -40,6 +40,20 @@
                       <label for="mobile_phone" class="form-label">Mobile Phone</label>
                       <input type="text" class="form-control" id="mobile_phone"  name="mobile_phone"  value="<%= admins.mobile_phone ? admins.mobile_phone : '' %>" required>
                     </div>
+
+                    <div class="col-12">
+                      <label for="password" class="form-label">Password</label>
+                      <input
+                        type="password"
+                        name="password"
+                        class="form-control"
+                        id="yourPassword"
+                        value="<%= admins.password ? admins.password : '' %>"
+                        required
+                      />
+                      <div class="invalid-feedback">Please enter your password!</div>
+                    </div>
+
                     <div class="text-center">
                       <button type="submit" class="btn btn-primary">Submit</button>
                       <button type="reset" class="btn btn-secondary">Reset</button>

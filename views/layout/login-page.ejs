@@ -73,7 +73,20 @@
                         Enter your username & password to login
                       </p>
                     </div>
-
+                    <% if (typeof message !== 'undefined' && message.length !==
+                    0) { %> <% if (message[0].alert === 'success') { %>
+                    <div class="alert alert-success" role="alert">
+                      <%= message[0].message %>
+                    </div>
+                    <% } else if (message[0].alert === 'warning') { %>
+                    <div class="alert alert-warning" role="alert">
+                      <%= message[0].message %>
+                    </div>
+                    <% } else { %>
+                    <div class="alert alert-danger" role="alert">
+                      <%= message[0].message %>
+                    </div>
+                    <% } %> <% } %>
                     <form
                       class="row g-3 needs-validation"
                       method="post"
