@@ -1,99 +1,99 @@
 <main id="main" class="main">
   <section class="section dashboard">
     <div class="row">
-      <!-- Left side columns -->
-      <div class="col-lg-8">
+      <!-- Kolom sisi kiri -->
+      <div class="col-lg-9">
         <div class="row">
-          <!-- Sales Card -->
+          <!-- Kartu Penjualan -->
           <div class="col-xxl-4 col-md-6">
-            
-                <% if (message.length !=0) { if (message[0].alert=='success' ) {
-                %>
-                <div class="alert alert-success" role="alert">
-                  <%= message[0].message %>
-                </div>
-                <% } else if (message[0].alert=='warning' ) { %>
-                <div class="alert alert-warning" role="alert">
-                  <%= message[0].message %>
-                </div>
-                <% } else { %>
-                <div class="alert alert-danger" role="alert">
-                  <%= message[0].message %>
-                </div>
-                <% } } %> <% if (typeof errors !='undefined' ) { %>
-                <div class="alert alert-danger" role="alert">
-                  <% errors.forEach(error=> { %>
-                  <li><%= error.msg %></li>
-                  <% }) %>
-                </div>
-                <% } %>
-                
-              
-           
+            <% if (message.length != 0) { if (message[0].alert == 'success') {
+            %>
+            <div class="alert alert-success" role="alert">
+              <%= message[0].message %>
+            </div>
+            <% } else if (message[0].alert == 'warning') { %>
+            <div class="alert alert-warning" role="alert">
+              <%= message[0].message %>
+            </div>
+            <% } else { %>
+            <div class="alert alert-danger" role="alert">
+              <%= message[0].message %>
+            </div>
+            <% } } %> <% if (typeof errors != 'undefined') { %>
+            <div class="alert alert-danger" role="alert">
+              <% errors.forEach(error => { %>
+              <li><%= error.msg %></li>
+              <% }) %>
+            </div>
+            <% } %>
           </div>
 
           <div class="card">
             <div class="card-body">
-              <h5 class="card-title">Your Ordered</h5>
+              <h5 class="card-title">Shopping Summary</h5>
 
               <% if(dataCart.length == 0){ %>
-                <div class="alert alert-warning" role="alert">
-                  There are no items in the cart
-                </div>
-            <% } else { %>
-              
-              <!-- Table with hoverable rows -->
+              <div class="alert alert-warning" role="alert">
+                There are no items in the cart
+              </div>
+              <% } else { %>
+              <!-- Tabel dengan baris yang dapat dihover -->
               <table class="table table-hover">
-                
                 <thead>
                   <tr>
                     <th scope="col">No</th>
                     <th scope="col">Product Name</th>
                     <th scope="col">Price</th>
                     <th scope="col">Qty</th>
-                    <th scope="col"></th>
-                    <th scope="col">Sub Total</th>
-                    <th scope="col">Total</th>
+                    <th scope="col">Action</th>
+                    <th scope="col">Total Price</th>
+                    <th scope="col">Grand Total</th>
                   </tr>
                 </thead>
-                <% dataCart.forEach(data => { %>
+                <% let grandTotal = 0; %> <% dataCart.forEach((data, index) => {
+                %>
                 <tbody>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
+                  <td><%= index + 1 %></td>
+                  <td><%= data.product_name %></td>
+                  <td>Rp.<%= data.price.toLocaleString() %></td>
+                  <td><%= data.jumlah_beli %></td>
                   <td>
                     <a
-                      href="/sub-cart/:product_id"
+                      href="/sub-cart/<%= data.product_id %>"
                       class="btn btn-primary btn-md position-relative"
+                      >-</a
                     >
-                      -
-                    </a>
-                    <a href="/sum-cart/:product_id" class="btn btn-primary btn-md position-relative"
+                    <a
+                      href="/sum-cart/<%= data.product_id %>"
+                      class="btn btn-primary btn-md position-relative"
                       >+</a
                     >
                   </td>
-                  <td></td>
-                  <td></td>
-                  <% }) %>
+                  <td>
+                    <% const totalPrice = data.price * data.jumlah_beli;
+                    grandTotal += totalPrice; %> Rp.<%=
+                    totalPrice.toLocaleString() %>
+                  </td>
+                  <td>Rp.<%= grandTotal.toLocaleString() %></td>
                 </tbody>
+                <% }) %>
               </table>
               <div
                 style="
                   display: flex;
                   width: 100%;
-                  border: radius 50px;
+                  border-radius: 50px;
                   justify-content: end;
                   margin-bottom: 12px;
                 "
               >
                 <a href="/items/add" class="btn btn-outline-primary">Buy</a>
               </div>
+              <% } %>
             </div>
           </div>
-          
-
-                    <% } %>
+        </div>
+      </div>
+    </div>
   </section>
 </main>
-
