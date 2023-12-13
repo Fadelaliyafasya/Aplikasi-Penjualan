@@ -66,6 +66,7 @@ const {
   searchCart,
   updateCart,
   searchCartByUserId,
+  deleteCart,
 } = require("./models/cart");
 
 const app = express();
@@ -83,7 +84,7 @@ app.use("/img", express.static(__dirname + "/public/assets/img"));
 app.use("/uploads", express.static(__dirname + "/public/assets/uploads"));
 
 app.use(express.json()); // req.body
-app.use(express.urlencoded({ extended: false })); //menggunakan middleware express.urlencoded().
+app.use(express.urlencoded({ extended: true })); //menggunakan middleware express.urlencoded().
 
 // config flash
 app.use(cookieParser("secret"));
@@ -106,17 +107,158 @@ app.use((req, res, next) => {
 });
 // ====================================Dashboard customer Area ====================================
 // default routes dasboard
-app.get("/", (req, res) => {
+app.get("/", async (req, res) => {
   var log = req.session.authenticated ? "true" : "false";
+  var userData = await searchUserByID(req.session.dataUser.id);
   res.render("dashboard-customer/dashboard", {
     title: "VirtuVorgue",
     logged: log,
     message: req.flash("message"),
     layout: "layout/core-index",
+    userData,
   });
 });
 
 // ==================================== End Dashboard Area ====================================
+
+// ========================= CART ====================================================
+app.get("/cart", async (req, res) => {
+  if (req.session.authenticated) {
+    if (req.session.dataUser.role == 2 || req.session.dataUser.role == 3) {
+      var userData = await searchUserByID(req.session.dataUser.id);
+      var dataCart = await searchCartByUserId(req.session.dataUser.id);
+      res.render("cart", {
+        title: "VirtuVorgue - Cart",
+        layout: "layout/core-index",
+        dataCart,
+        userData,
+        logged: "true",
+        message: req.flash("message"),
+      });
+    } else {
+      req.flash("message", { alert: "warning", message: "Access Denied!" });
+      res.redirect("/");
+    }
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
+    });
+    res.redirect("/login");
+  }
+});
+
+app.get("/add-cart/:product_id", async (req, res) => {
+  if (req.session.authenticated) {
+    // Mendapatkan data produk dari database berdasarkan product_id
+    // const product = await fetchProductsById(req.params.product_id);
+
+    // if (product) {
+    // Melakukan pengecekan apakah produk sudah ada di dalam cart
+    var cartCheck = await searchCart(
+      req.session.dataUser.id,
+      req.params.product_id
+    );
+
+    if (cartCheck) {
+      // Jika produk sudah ada di dalam cart, update jumlahnya
+      const data = [
+        req.session.dataUser.id,
+        req.params.product_id,
+        cartCheck.quantity + 1,
+      ];
+      await updateCart(data);
+      req.flash("message", {
+        alert: "success",
+        message: "Items have been updated in the cart!",
+      });
+    } else {
+      // Jika produk belum ada di dalam cart, tambahkan ke dalam cart dengan jumlah 1
+      const data = [req.session.dataUser.id, req.params.product_id, 1];
+      await addCart(data);
+
+      req.flash("message", {
+        alert: "success",
+        message: "Item has been added to cart!",
+      });
+    }
+
+    res.redirect("/products");
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
+    });
+    res.redirect("/login");
+  }
+});
+
+// controller sum product cart
+app.get("/sum-cart/:product_id", async (req, res) => {
+  if (req.session.authenticated) {
+    var dataProduct = await fetchProductsById(req.params.product_id);
+    var cartCheck = await searchCart(
+      req.session.dataUser.id,
+      req.params.product_id
+    );
+    var jumlahUpdate = cartCheck.quantity + 1;
+    if (jumlahUpdate <= dataProduct.stock_quantity) {
+      var data = [req.session.dataUser.id, req.params.product_id, jumlahUpdate];
+      await updateCart(data);
+      req.flash("message", {
+        alert: "success",
+        message: "Number of Items Added Successfully!",
+      });
+    } else {
+      req.flash("message", {
+        alert: "failed",
+        message: "Number of Items Exceeds Maximum!",
+      });
+    }
+    res.redirect("/cart");
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
+    });
+    res.redirect("/login");
+  }
+});
+
+// controller sub product cart
+app.get("/sub-cart/:product_id", async (req, res) => {
+  if (req.session.authenticated) {
+    var cartCheck = await searchCart(
+      req.session.dataUser.id,
+      req.params.product_id
+    );
+    var jumlahUpdate = cartCheck.quantity - 1;
+    if (jumlahUpdate > 0) {
+      var data = [req.session.dataUser.id, req.params.product_id, jumlahUpdate];
+      await updateCart(data);
+      req.flash("message", {
+        alert: "success",
+        message: "Number of Items Successfully Reduced!",
+      });
+    } else {
+      var data = [req.session.dataUser.id, req.params.product_id];
+      await deleteCart(data);
+      req.flash("message", {
+        alert: "warning",
+        message: "Deleted Item Data!",
+      });
+    }
+    res.redirect("/cart");
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
+    });
+    res.redirect("/login");
+  }
+});
+
+// ========================= END CART ====================================================
 
 // =================================== LOGIN AND REGISTER ===================================
 async function passwordVerification(password, passwordHash) {
@@ -395,160 +537,13 @@ app.get("/dashboard", async (req, res) => {
   }
 });
 
-// ========================= CART ====================================================
-app.get("/cart", async (req, res) => {
-  if (req.session.authenticated) {
-    var dataCart = await searchCartByUserId(req.session.dataUser.id);
-    res.render("cart", {
-      title: "VirtuVorgue - Cart",
-      layout: "layout/core-index",
-      dataCart,
-      logged: "true",
-      message: req.flash("message"),
-    });
-  } else {
-    req.flash("message", {
-      alert: "failed",
-      message: "You must log in first!",
-    });
-    res.redirect("/login");
-  }
-});
-
-app.get("/add-cart/:product_id", async (req, res) => {
-  try {
-    if (req.session.authenticated) {
-      // Mendapatkan data produk dari database berdasarkan product_id
-      const product = await fetchProductsById(req.params.product_id);
-
-      if (product) {
-        // Melakukan pengecekan apakah produk sudah ada di dalam cart
-        const cartCheck = await searchCart(
-          req.session.dataUser.id,
-          req.params.product_id
-        );
-
-        if (cartCheck) {
-          // Jika produk sudah ada di dalam cart, update jumlahnya
-          const data = [
-            req.session.dataUser.id,
-            req.params.product_id,
-            cartCheck.quantity + 1,
-          ];
-          await updateCart(data);
-          req.flash("message", {
-            alert: "success",
-            message: "Items have been updated in the cart!",
-          });
-        } else {
-          // Jika produk belum ada di dalam cart, tambahkan ke dalam cart dengan jumlah 1
-          const data = [req.session.dataUser.id, req.params.product_id, 1];
-          await addCart(data);
-
-          req.flash("message", {
-            alert: "success",
-            message: "Item has been added to cart!",
-          });
-        }
-
-        res.redirect("/products");
-      } else {
-        req.flash("message", {
-          alert: "danger",
-          message: "Product not found!",
-        });
-        res.redirect("/products");
-      }
-    } else {
-      req.flash("message", {
-        alert: "failed",
-        message: "You must log in first!",
-      });
-      res.redirect("/login");
-    }
-  } catch (error) {
-    console.error(error);
-    req.flash("message", {
-      alert: "danger",
-      message: "Error adding item to cart!",
-    });
-    res.redirect("/products");
-  }
-});
-
-// controller sum product cart
-app.get("/sum-cart/:product_id", async (req, res) => {
-  if (req.session.authenticated) {
-    var dataProduct = await searchCartByUserId(req.params.product_id);
-    var cartCheck = await searchCart(
-      req.session.dataUser.id,
-      req.params.product_id
-    );
-    var jumlahUpdate = cartCheck.quantity + 1;
-    if (jumlahUpdate <= dataProduct.quantity) {
-      var data = [req.session.dataUser.id, req.params.product_id, jumlahUpdate];
-      await updateCart(data);
-      req.flash("message", {
-        alert: "success",
-        message: "Number of Items Added Successfully!",
-      });
-    } else {
-      req.flash("message", {
-        alert: "failed",
-        message: "Number of Items Exceeds Maximum!",
-      });
-    }
-    res.redirect("/cart");
-  } else {
-    req.flash("message", {
-      alert: "failed",
-      message: "You must log in first!",
-    });
-    res.redirect("/login");
-  }
-});
-
-// controller sub product cart
-app.get("/sub-cart/:product_id", async (req, res) => {
-  if (req.session.authenticated) {
-    var cartCheck = await searchCart(
-      req.session.dataUser.id,
-      req.params.product_id
-    );
-    var jumlahUpdate = cartCheck.quantity - 1;
-    if (jumlahUpdate > 0) {
-      var data = [req.session.dataUser.id, req.params.product_id, jumlahUpdate];
-      await updateCart(data);
-      req.flash("message", {
-        alert: "success",
-        message: "Number of Items Successfully Reduced!",
-      });
-    } else {
-      var data = [req.session.dataUser.id, req.params.product_id];
-      await deleteCart(data);
-      req.flash("message", {
-        alert: "warning",
-        message: "Deleted Item Data!",
-      });
-    }
-    res.redirect("/cart");
-  } else {
-    req.flash("message", {
-      alert: "failed",
-      message: "You must log in first!",
-    });
-    res.redirect("/login");
-  }
-});
-
-// ========================= END CART ====================================================
-
 // ================ MIDDLEWARE ADMIN ========================
 
 // data-admin
 app.get("/data-admin", async (req, res) => {
   if (req.session.authenticated) {
     if (req.session.dataUser.role == 1 || req.session.dataUser.role == 2) {
+      var userData = await searchUserByID(req.session.dataUser.id);
       const dataUser = await fetchDataUser();
       const userAdmin = dataUser.filter(
         (user) => user.role === 1 || user.role === 2
@@ -558,6 +553,7 @@ app.get("/data-admin", async (req, res) => {
         layout: "layout/core-index",
         userAdmin,
         message: req.flash("message"),
+        userData,
       });
     } else {
       req.flash("message", { alert: "warning", message: "Access Denied!" });
@@ -573,14 +569,16 @@ app.get("/data-admin", async (req, res) => {
 });
 
 // add data-admin
-app.get("/data-admin/add", (req, res) => {
+app.get("/data-admin/add", async (req, res) => {
   if (req.session.authenticated) {
     if (req.session.dataUser.role == 1 || req.session.dataUser.role == 2) {
+      var userData = await searchUserByID(req.session.dataUser.id);
       if (req.session.dataUser.role == 1) {
         res.render("admin/add-admin", {
           title: "VirtuVorgue - Add Admin",
           layout: "layout/core-index",
           message: req.flash("message"),
+          userData,
         });
       } else {
         req.flash("message", {
@@ -628,14 +626,16 @@ app.post(
     if (req.session.authenticated) {
       if (req.session.dataUser.role == 1 || req.session.dataUser.role == 2) {
         if (req.session.dataUser.role == 1) {
+          var userData = await searchUserByID(req.session.dataUser.id);
           const errors = validationResult(req);
           if (!errors.isEmpty()) {
             res.render("admin/add-admin", {
               title: "VirtuVorgue - Add Admin",
               layout: "layout/core-index.ejs",
               errors: errors.array(),
+              userData,
             });
-
+          } else {
             console.log("Data yang dikirim: ", req.body);
 
             // Gunakan fungsi addDataAdmin dari model basis data
@@ -677,6 +677,7 @@ app.post(
 app.get("/data-admin/detail-admin/:user_id", async (req, res) => {
   if (req.session.authenticated) {
     if (req.session.dataUser.role == 1 || req.session.dataUser.role == 2) {
+      var userData = await searchUserByID(req.session.dataUser.id);
       const adminId = req.params.user_id;
       const admins = await fetchDataUser();
       const admin = admins.find((data_admin) => data_admin.user_id == adminId); // Tambahkan pemanggilan fetchDataUser dengan parameter id_customer
@@ -684,6 +685,7 @@ app.get("/data-admin/detail-admin/:user_id", async (req, res) => {
         title: "VirtuVorgue - Detail Admin",
         layout: "layout/core-index.ejs",
         admin,
+        userData,
       });
     } else {
       req.flash("message", { alert: "warning", message: "Access Denied!" });
@@ -702,11 +704,13 @@ app.get("/data-admin/update-admin/:user_id", async (req, res) => {
   if (req.session.authenticated) {
     if (req.session.dataUser.role == 1 || req.session.dataUser.role == 2) {
       if (req.session.dataUser.role == 1) {
+        var userData = await searchUserByID(req.session.dataUser.id);
         const admins = await searchUserByID(req.params.user_id);
         res.render("admin/update-admin", {
           title: "VirtuVorgue - Update Admin",
           layout: "layout/core-index",
-          admins,
+          admins: req.body,
+          userData,
           message: req.flash("message"),
         });
       } else {
@@ -714,6 +718,7 @@ app.get("/data-admin/update-admin/:user_id", async (req, res) => {
           alert: "warning",
           message: "Admin Cannot Access the Update Admin Menu!",
         });
+        res.redirect("/data-admin");
       }
     } else {
       req.flash("message", { alert: "warning", message: "Access Denied!" });
@@ -760,6 +765,7 @@ app.post(
     if (req.session.authenticated) {
       if (req.session.dataUser.role == 1 || req.session.dataUser.role == 2) {
         if (req.session.dataUser.role == 1) {
+          var userData = await searchUserByID(req.session.dataUser.id);
           const errors = validationResult(req);
           if (!errors.isEmpty()) {
             res.render("admin/update-admin", {
@@ -767,6 +773,7 @@ app.post(
               layout: "layout/core-index",
               errors: errors.array(),
               admins: req.body,
+              userData,
             });
 
             await updateUser(req.body);
@@ -828,12 +835,14 @@ app.get("/data-admin/delete-admin/:user_id", async (req, res) => {
 app.get("/data-customer", async (req, res) => {
   if (req.session.authenticated) {
     if (req.session.dataUser.role == 1 || req.session.dataUser.role == 2) {
+      var userData = await searchUserByID(req.session.dataUser.id);
       const customers = await fetchDataUser();
       const cust = customers.filter((c) => c.role === 3);
       res.render("customers/data-customer", {
         title: "VirtuVorgue - Data Customer",
         layout: "layout/core-index",
         cust,
+        userData,
         message: req.flash("message"),
       });
     } else {
@@ -849,74 +858,76 @@ app.get("/data-customer", async (req, res) => {
   }
 });
 
-// add data-admin
-app.get("/data-customer/add", (req, res) => {
-  res.render("customers/add-customer", {
-    title: "VirtuVorgue - Add Customer",
-    layout: "layout/core-index",
-  });
-});
+// // add data-admin
+// app.get("/data-customer/add", (req, res) => {
+//   res.render("customers/add-customer", {
+//     title: "VirtuVorgue - Add Customer",
+//     layout: "layout/core-index",
+//   });
+// });
 
 // middleware ini akan di hapus
-app.post(
-  "/data-customer/add",
-  [
-    body("id_customer").custom(async (value) => {
-      const duplicate = await duplicateIdCustomerCheck(value);
+// middleware add customer
+// app.post(
+//   "/data-customer/add",
+//   [
+//     body("id_customer").custom(async (value) => {
+//       const duplicate = await duplicateIdCustomerCheck(value);
 
-      if (duplicate) {
-        throw new Error("ID already registered");
-      }
-      return true;
-    }),
-    body("email").custom(async (value) => {
-      const emailDuplicate = await emailDuplicateCustomerCheck(value);
-      if (emailDuplicate) {
-        throw new Error("Email has been registered");
-      }
-      return true;
-    }),
-    check("email", "Invalid email").isEmail(),
-    check("mobile_phone", "mobile phone number invalid").isMobilePhone("id-ID"),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.render("customers/add-customer", {
-        title: "VirtuVorgue - Add Customer",
-        layout: "layout/core-index.ejs",
-        errors: errors.array(),
-      });
-    } else {
-      try {
-        console.log("Data yang dikirim: ", req.body);
+//       if (duplicate) {
+//         throw new Error("ID already registered");
+//       }
+//       return true;
+//     }),
+//     body("email").custom(async (value) => {
+//       const emailDuplicate = await emailDuplicateCustomerCheck(value);
+//       if (emailDuplicate) {
+//         throw new Error("Email has been registered");
+//       }
+//       return true;
+//     }),
+//     check("email", "Invalid email").isEmail(),
+//     check("mobile_phone", "mobile phone number invalid").isMobilePhone("id-ID"),
+//   ],
+//   async (req, res) => {
+//     const errors = validationResult(req);
+//     if (!errors.isEmpty()) {
+//       res.render("customers/add-customer", {
+//         title: "VirtuVorgue - Add Customer",
+//         layout: "layout/core-index.ejs",
+//         errors: errors.array(),
+//       });
+//     } else {
+//       try {
+//         console.log("Data yang dikirim: ", req.body);
 
-        // Gunakan fungsi addDataAdmin dari model basis data
-        await addDataCustomer(
-          // Ekstrak data dari tubuh permintaan
-          req.body.id_customer,
-          req.body.username,
-          req.body.nama,
-          req.body.email,
-          req.body.mobile_phone
-        );
-        req.flash("msg", "Data added successfully");
+//         // Gunakan fungsi addDataAdmin dari model basis data
+//         await addDataCustomer(
+//           // Ekstrak data dari tubuh permintaan
+//           req.body.id_customer,
+//           req.body.username,
+//           req.body.nama,
+//           req.body.email,
+//           req.body.mobile_phone
+//         );
+//         req.flash("msg", "Data added successfully");
 
-        // Redirect ke halaman data-admin untuk melihat data yang diperbarui
-        res.redirect("/data-customer");
-      } catch (err) {
-        console.error(err.msg);
-        req.flash("msg", "An error occurred while adding data");
-        res.status(500);
-      }
-    }
-  }
-);
+//         // Redirect ke halaman data-admin untuk melihat data yang diperbarui
+//         res.redirect("/data-customer");
+//       } catch (err) {
+//         console.error(err.msg);
+//         req.flash("msg", "An error occurred while adding data");
+//         res.status(500);
+//       }
+//     }
+//   }
+// );
 
 // detail data-customer
 app.get("/data-customer/detail-customer/:user_id", async (req, res) => {
   if (req.session.authenticated) {
     if (req.session.dataUser.role == 2) {
+      var userData = await searchUserByID(req.session.dataUser.id);
       const customerId = req.params.user_id;
       const customers = await fetchDataUser();
       const customer = customers.find(
@@ -927,6 +938,7 @@ app.get("/data-customer/detail-customer/:user_id", async (req, res) => {
         title: "VirtuVorgue - Detail Customer",
         layout: "layout/core-index.ejs",
         customer,
+        userData,
         message: req.flash("message"),
       });
     } else {
@@ -943,63 +955,63 @@ app.get("/data-customer/detail-customer/:user_id", async (req, res) => {
 });
 
 // update data-customer
-app.get("/data-customer/update-customer/:id_customer", async (req, res) => {
-  try {
-    const customers = await searchCustomer(req.params.id_customer);
-    res.render("customers/update-customer", {
-      title: "VirtuVorgue - Update Customer",
-      layout: "layout/core-index",
-      customers,
-    });
-  } catch (err) {
-    console.error(err.msg);
-    res.status(500);
-  }
-});
+// app.get("/data-customer/update-customer/:id_customer", async (req, res) => {
+//   try {
+//     const customers = await searchCustomer(req.params.id_customer);
+//     res.render("customers/update-customer", {
+//       title: "VirtuVorgue - Update Customer",
+//       layout: "layout/core-index",
+//       customers,
+//     });
+//   } catch (err) {
+//     console.error(err.msg);
+//     res.status(500);
+//   }
+// });
 
-app.post(
-  "/data-customer/update",
-  [
-    body("nama").custom(async (value, { req }) => {
-      const duplicate = await duplicateCustomerName(value);
-      if (value !== req.body.oldName && duplicate) {
-        throw new Error("Name has been registered");
-      }
-      return true;
-    }),
-    body("email").custom(async (value) => {
-      const emailDuplicate = await emailDuplicateCustomerCheck(value);
-      if (emailDuplicate) {
-        throw new Error("Email has been registered");
-      }
-      return true;
-    }),
-    check("email", "Invalid email").isEmail(),
-    check("mobile_phone", "Something wrong with phone number").isMobilePhone(
-      "id-ID"
-    ),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.render("customers/update-customer", {
-        title: "VirtuVorgue - Update Customer",
-        layout: "layout/core-index",
-        errors: errors.array(),
-        customers: req.body,
-      });
-    } else {
-      try {
-        await updateCustomer(req.body);
-        req.flash("msg", "Data updated successfully");
-        res.redirect("/data-customer");
-      } catch (err) {
-        console.error(err.msg);
-        res.status(500);
-      }
-    }
-  }
-);
+// app.post(
+//   "/data-customer/update",
+//   [
+//     body("nama").custom(async (value, { req }) => {
+//       const duplicate = await duplicateCustomerName(value);
+//       if (value !== req.body.oldName && duplicate) {
+//         throw new Error("Name has been registered");
+//       }
+//       return true;
+//     }),
+//     body("email").custom(async (value) => {
+//       const emailDuplicate = await emailDuplicateCustomerCheck(value);
+//       if (emailDuplicate) {
+//         throw new Error("Email has been registered");
+//       }
+//       return true;
+//     }),
+//     check("email", "Invalid email").isEmail(),
+//     check("mobile_phone", "Something wrong with phone number").isMobilePhone(
+//       "id-ID"
+//     ),
+//   ],
+//   async (req, res) => {
+//     const errors = validationResult(req);
+//     if (!errors.isEmpty()) {
+//       res.render("customers/update-customer", {
+//         title: "VirtuVorgue - Update Customer",
+//         layout: "layout/core-index",
+//         errors: errors.array(),
+//         customers: req.body,
+//       });
+//     } else {
+//       try {
+//         await updateCustomer(req.body);
+//         req.flash("msg", "Data updated successfully");
+//         res.redirect("/data-customer");
+//       } catch (err) {
+//         console.error(err.msg);
+//         res.status(500);
+//       }
+//     }
+//   }
+// );
 
 // delete data-admin / by ID
 app.get("/data-customer/delete-customer/:user_id", async (req, res) => {
@@ -1034,10 +1046,12 @@ app.get("/data-customer/delete-customer/:user_id", async (req, res) => {
 app.get("/products", async (req, res) => {
   if (req.session.authenticated) {
     if (req.session.dataUser.role == 2 || req.session.dataUser.role == 3) {
+      var userData = await searchUserByID(req.session.dataUser.id);
       const products = await fetchDataProducts(req.query.product_name);
       res.render("products/products", {
         title: "VirtuVorgue - Products",
         layout: "layout/core-index",
+        userData,
         products: products,
         message: req.flash("message"),
       });
@@ -1059,10 +1073,12 @@ app.get("/items", async (req, res) => {
   if (req.session.authenticated) {
     if (req.session.dataUser.role == 2) {
       const products = await fetchDataProducts();
+      var userData = await searchUserByID(req.session.dataUser.id);
       res.render("inventory/items", {
         title: "VirtuVorgue - Items",
         layout: "layout/core-index",
         message: req.flash("message"),
+        userData,
         products,
       });
     } else {
@@ -1080,11 +1096,26 @@ app.get("/items", async (req, res) => {
 
 // middleware add items
 app.get("/items/add", async (req, res) => {
-  res.render("inventory/add-items", {
-    title: "VirtuVorgue - Add Items",
-    layout: "layout/core-index",
-    msg: req.flash("msg, "),
-  });
+  if (req.session.authenticated) {
+    if (req.session.dataUser.role == 2) {
+      var userData = await searchUserByID(req.session.dataUser.id);
+      res.render("inventory/add-items", {
+        title: "VirtuVorgue - Add Items",
+        layout: "layout/core-index",
+        message: req.flash("message"),
+        userData,
+      });
+    } else {
+      req.flash("message", { alert: "warning", message: "Access Denied!" });
+      res.redirect("/");
+    }
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
+    });
+    res.redirect("/login");
+  }
 });
 
 // multer
@@ -1199,39 +1230,58 @@ app.post(
 
 // middleware untuk detail items
 app.get("/items/detail-products/:product_name", async (req, res) => {
-  try {
-    const productName = req.params.product_name;
-    const findProduct = await fetchDataProducts();
-    const products = findProduct.find(
-      (products) => products.product_name === productName
-    );
+  if (req.session.authenticated) {
+    if (req.session.dataUser.role == 2) {
+      var userData = await searchUserByID(req.session.dataUser.id);
+      const productName = req.params.product_name;
+      const findProduct = await fetchDataProducts();
+      const products = findProduct.find(
+        (products) => products.product_name === productName
+      );
 
-    res.render("inventory/detail-items", {
-      title: "VirtuVorgue - Detail Product",
-      layout: "layout/core-index.ejs",
-      products,
+      res.render("inventory/detail-items", {
+        title: "VirtuVorgue - Detail Product",
+        layout: "layout/core-index.ejs",
+        products,
+        userData,
+        message: req.flash("message"),
+      });
+    } else {
+      req.flash("message", { alert: "warning", message: "Access Denied!" });
+      res.redirect("/");
+    }
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
     });
-  } catch (err) {
-    console.log(err.msg);
+    res.redirect("/");
   }
 });
 
 // delete products items
 app.get("/items/delete-products/:product_name", async (req, res) => {
-  try {
-    const deleteProducts = await deleteDataProducts(req.params.product_name);
+  if (req.session.authenticated) {
+    if (req.session.dataUser.role == 2) {
+      const deleteProducts = await deleteDataProducts(req.params.product_name);
 
-    if (!deleteProducts) {
-      req.flash("msg", "Data not found or has been deleted");
+      if (!deleteProducts) {
+        req.flash("msg", "Data not found or has been deleted");
+      } else {
+        req.flash("msg", "Data deleted successfully");
+      }
+
+      res.redirect("/items");
     } else {
-      req.flash("msg", "Data deleted successfully");
+      req.flash("message", { alert: "warning", message: "Access Denied!" });
+      res.redirect("/");
     }
-
-    res.redirect("/items");
-  } catch (err) {
-    console.error(err.msg);
-    req.flash("msg", "An error occurred while deleting data.");
-    res.redirect("/items");
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
+    });
+    res.redirect("/");
   }
 });
 
@@ -1245,14 +1295,14 @@ app.use("/", async (req, res) => {
     if (req.session.dataUser.role == 1 || req.session.dataUser.role == 2) {
       res.render("layout/error404", {
         title: "VirtuVorgue - Page Not Found",
-        userData,
         layout: "layout/error404",
+        userData,
       });
     } else {
       res.render("layout/error404", {
         title: "VirtuVorgue - Page Not Found",
-        userData,
         logged: log,
+        userData,
         layout: "layout/error404",
       });
     }
