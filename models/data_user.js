@@ -27,7 +27,7 @@ const fetchUserById = async (name) => {
   return result.rows[0];
 };
 
-// Add new Admin
+// Add new User
 const addDataUser = async (
   username,
   name,
@@ -59,16 +59,16 @@ const addDataUser = async (
   }
 };
 
-const totalUser = async (name) => {
+const totalUser = async (role) => {
   const connection = await pool.connect();
 
   try {
     let query = "SELECT COUNT(*) AS total_user FROM data_user";
     const values = [];
 
-    if (name) {
-      query += " WHERE name = $1";
-      values.push(name);
+    if (role) {
+      query += " WHERE role = $1";
+      values.push(role);
     }
 
     const result = await connection.query(query, values);
@@ -121,7 +121,7 @@ const duplicateUserName = async (name) => {
 };
 
 // duplicate password check
-const duplicateUserPassword = async (password) => {
+const duplicatePasswordUser = async (password) => {
   const admins = await fetchDataUser();
   return admins.find((data_user) => data_user.password === password);
 };
@@ -166,6 +166,20 @@ const deleteDataUser = async (user_id) => {
   }
 };
 
+const searchUserByID = async (data) => {
+  const user = await pool.query("select * from data_user where user_id = $1", [
+    data,
+  ]);
+  return user.rows[0];
+};
+
+const searchUserByUsername = async (data) => {
+  const user = await pool.query("select * from data_user where username = $1", [
+    data,
+  ]);
+  return user.rows[0];
+};
+
 // Cari contact
 const searchUser = async (user_id) => {
   const users = await fetchDataUser();
@@ -175,6 +189,12 @@ const searchUser = async (user_id) => {
   return user;
 };
 
+// duplicate username check
+const duplicateUsernameUser = async (username) => {
+  const users = await fetchDataUser();
+  return users.find((data_user) => data_user.username === username);
+};
+
 module.exports = {
   fetchDataUser,
   totalUser,
@@ -182,10 +202,13 @@ module.exports = {
   deleteDataUser,
   fetchUserById,
   checkIdUser,
+  searchUserByUsername,
   duplicateIdUserCheck,
   searchUser,
   emailDuplicateUserCheck,
   updateUser,
   duplicateUserName,
-  duplicateUserPassword,
+  duplicatePasswordUser,
+  searchUserByID,
+  duplicateUsernameUser,
 };
