@@ -35,4 +35,18 @@ const searchCartByUserId = async (data) => {
   return cart.rows;
 };
 
-module.exports = { addCart, searchCart, updateCart, searchCartByUserId };
+const deleteCart = async (data) => {
+  const cart = await pool.query(
+    "delete from cart where user_id = $1 and product_id = $2",
+    [data[0], data[1]]
+  );
+  return cart;
+};
+
+module.exports = {
+  addCart,
+  searchCart,
+  updateCart,
+  searchCartByUserId,
+  deleteCart,
+};
