@@ -1,8 +1,9 @@
 const express = require("express");
 const uploader = require("multer"); // uploading image
-const jwt = require("jsonwebtoken");
-const app = express();
-require("dotenv").config();
+// const jwt = require("jsonwebtoken");
+
+const bcrypt = require("bcrypt");
+// require("dotenv").config();
 const moment = require("moment");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
@@ -42,16 +43,32 @@ const {
   duplicateProductsName,
   deleteDataProducts,
   totalProducts,
+  fetchProductsById,
 } = require("./models/data_products");
 
 const {
+  fetchDataUser,
   totalUser,
   addDataUser,
-  fetchDataUser,
+  searchUserByUsername,
   duplicateIdUserCheck,
   emailDuplicateUserCheck,
+  duplicateUserName,
+  searchUserByID,
+  duplicatePasswordUser,
+  duplicateUsernameUser,
+  deleteDataUser,
+  searchUser,
 } = require("./models/data_user");
 
+const {
+  addCart,
+  searchCart,
+  updateCart,
+  searchCartByUserId,
+} = require("./models/cart");
+
+const app = express();
 const host = "localhost";
 const port = 3001;
 const now = moment().format("DD MMMM YYYY, HH:mm:ss");
@@ -59,86 +76,174 @@ const now = moment().format("DD MMMM YYYY, HH:mm:ss");
 // static files
 app.use(expressLayouts);
 app.use(express.static("public"));
-app.use(flash()); // mengaktifkan fitur flash
+// mengaktifkan fitur flash
 app.use("/css", express.static(__dirname + "/public/assets/css"));
 app.use("/js", express.static(__dirname + "/public/assets/js"));
 app.use("/img", express.static(__dirname + "/public/assets/img"));
 app.use("/uploads", express.static(__dirname + "/public/assets/uploads"));
 
 app.use(express.json()); // req.body
-app.use(express.urlencoded({ extended: true })); //menggunakan middleware express.urlencoded().
+app.use(express.urlencoded({ extended: false })); //menggunakan middleware express.urlencoded().
 
 // config flash
 app.use(cookieParser("secret"));
 app.use(
   session({
-    cookie: { maxAge: 6000 },
+    cookie: { maxAge: null },
     secret: "secret",
-    resave: true,
+    resave: false,
     saveUninitialized: true,
   })
 );
 
 // set views
 app.set("view engine", "ejs");
+app.enable("strict routing");
 app.set("views", "./views");
-
+app.use(flash());
+app.use((req, res, next) => {
+  next();
+});
 // ====================================Dashboard customer Area ====================================
 // default routes dasboard
 app.get("/", (req, res) => {
+  var log = req.session.authenticated ? "true" : "false";
   res.render("dashboard-customer/dashboard", {
     title: "VirtuVorgue",
+    logged: log,
+    message: req.flash("message"),
     layout: "layout/core-index",
   });
 });
 
-// user dashboard area
-app.get("/user", (req, res) => {
-  res.render("dasboard-user-area", {
-    title: "VirtuVorgue",
-    layout: "layout/core-index",
-  });
-});
 // ==================================== End Dashboard Area ====================================
 
 // =================================== LOGIN AND REGISTER ===================================
+async function passwordVerification(password, passwordHash) {
+  const result = await bcrypt.compare(password, passwordHash);
+  return result;
+}
 
-app.get("/login", (req, res) => {
-  res.render("layout/login-page", {
-    title: "VirtuVorgue - Login",
-    layout: "layout/login-page",
-  });
-});
-// authenticateToken,
-app.post("/login", async (req, res) => {
-  try {
-    const { username, password } = req.body;
-
-    const user = await fetchCustomer(username, password);
-
-    console.log("username:", username);
-    console.log("password:", password);
-
-    if (!user) {
-      return res.status(401).json({ error: "Invalid username or password" });
-    } else {
-      const payload = { username: user.username, password: user.password };
-
-      const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET);
-      localStorage.setItem(accessToken);
-      // Mengatur token dalam header Bearer
-      res.json({ accessToken: `Bearer ${accessToken}` });
-      // return { accessToken };
-      // untuk expired access token
-      // {
-      //   expiresIn: "1h",
-      // }
+app.get("/login", async (req, res) => {
+  console.log("Terotentikasi:", req.session.authenticated);
+  if (req.session.authenticated) {
+    console.log("Peran Pengguna:", req.session.dataUser.role);
+    req.flash("message", { alert: "warning", message: "You Are Signed In!" });
+    if (req.session.dataUser.role == 1 || req.session.dataUser.role == 2) {
+      res.redirect("/dashboard");
+    } else if (req.session.dataUser.role == 3) {
+      res.redirect("/");
     }
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
+  } else {
+    res.render("layout/login-page", {
+      title: "VirtuVorgue - Login",
+      message: req.flash("message"),
+      layout: "layout/login-page",
+    });
   }
 });
+
+app.post(
+  "/login",
+  [check("password", "Password Harus Diisi").notEmpty().trim()],
+
+  async (req, res) => {
+    var dataUser = await searchUserByUsername(req.body.username);
+
+    if (dataUser) {
+      if (await passwordVerification(req.body.password, dataUser.password)) {
+        req.session.authenticated = true;
+        req.session.dataUser = { id: dataUser.user_id, role: dataUser.role };
+
+        if (req.session.dataUser.role == 1 || req.session.dataUser.role == 2) {
+          // Set req.session.authenticated berdasarkan role (gunakan peran langsung)
+          req.session.authenticated = req.session.dataUser.role;
+          res.redirect("/dashboard");
+        } else if (req.session.dataUser.role == 3) {
+          // Set req.session.authenticated berdasarkan role (gunakan peran langsung)
+          req.session.authenticated = req.session.dataUser.role;
+          res.redirect("/");
+        }
+      } else {
+        req.flash("message", {
+          alert: "failed",
+          message: "Password Yang Anda Masukan Salah",
+        });
+        res.redirect("/login");
+      }
+    } else {
+      req.flash("message", {
+        alert: "failed",
+        message: "User Not Found",
+      });
+      res.redirect("/login");
+    }
+  }
+);
+
+// controller logout
+app.get("/logout", async (req, res) => {
+  if (req.session.authenticated) {
+    req.session.destroy((err) => {
+      if (err) {
+        console.log(err);
+      } else {
+        res.redirect("/login");
+      }
+    });
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
+    });
+    res.redirect("/login");
+  }
+});
+
+// app.post(
+//   "/login",
+//   [check("email", "Invalid email").isEmail()],
+
+//   async (req, res) => {
+//     var dataUser = await searchUserByUsername(req.body.username);
+//     if (dataUser) {
+//       if (await passwordVerification(req.body.password, dataUser.password)) {
+//         req.session.authenticated = true;
+//         req.session.dataUser = { id: dataUser.id, role_id: dataUser.role_id };
+
+//         // Tambahkan kondisi untuk menetapkan req.session.authenticated berdasarkan role
+//         if (req.session.dataUser.role_id === 1) {
+//           req.session.authenticated = "superadmin";
+//         } else if (req.session.dataUser.role_id === 2) {
+//           req.session.authenticated = "admin";
+//         } else if (req.session.dataUser.role_id === 3) {
+//           req.session.authenticated = "customer";
+//         }
+
+//         if (
+//           req.session.dataUser.role_id == 1 ||
+//           req.session.dataUser.role_id == 2
+//         ) {
+//           res.redirect("/admin");
+//         } else if (req.session.dataUser.role_id == 3) {
+//           res.redirect("/");
+//         }
+//       } else {
+//         req.flash("message", {
+//           alert: "failed",
+//           message: "Password Yang Anda Masukan Salah",
+//         });
+//         res.redirect("/login");
+//       }
+//     } else {
+//       req.flash("message", {
+//         alert: "failed",
+//         message: "User Tidak Ditemukan",
+//       });
+//       res.redirect("/login");
+//     }
+//   }
+// );
 
 // function authenticateToken(req, res, next) {
 //   const authHeader = req.headers["authorization"];
@@ -157,6 +262,7 @@ app.post("/login", async (req, res) => {
 // }
 
 app.get("/register", (req, res) => {
+  req.session.authenticated = false;
   res.render("layout/register-page", {
     title: "VirtuVorgue - Register",
     layout: "layout/register-page",
@@ -168,7 +274,7 @@ app.post(
   "/register",
   [
     body("nama").custom(async (value) => {
-      const duplicate = await duplicateCustomerName(value);
+      const duplicate = await duplicateUserName(value);
 
       if (duplicate) {
         throw new Error("Name already registered");
@@ -176,7 +282,7 @@ app.post(
       return true;
     }),
     body("email").custom(async (value) => {
-      const emailDuplicate = await emailDuplicateCustomerCheck(value);
+      const emailDuplicate = await emailDuplicateUserCheck(value);
       if (emailDuplicate) {
         throw new Error("Email has been registered");
       }
@@ -184,14 +290,14 @@ app.post(
     }),
 
     body("password").custom(async (value) => {
-      const duplicate = await duplicatePasswordCustomer(value);
+      const duplicate = await duplicatePasswordUser(value);
       if (duplicate) {
         throw new Error("Password has been registered");
       }
       return true;
     }),
     body("username").custom(async (value) => {
-      const duplicateUser = await duplicateUsernameCustomer(value);
+      const duplicateUser = await duplicateUsernameUser(value);
       if (duplicateUser) {
         throw new Error("User has been registered");
       }
@@ -213,15 +319,16 @@ app.post(
         console.log("Data yang dikirim: ", req.body);
 
         // Gunakan fungsi addDataAdmin dari model basis data
-        const addedAdmin = await addDataCustomer(
+        const addedUser = await addDataUser(
           req.body.username,
           req.body.nama,
+          3,
           req.body.email,
           req.body.mobile_phone,
           req.body.password
         );
 
-        if (addedAdmin) {
+        if (addedUser) {
           // Validasi panjang password
           if (req.body.password.length < 6) {
             req.flash(
@@ -255,57 +362,244 @@ app.post(
 // ==================================== Dashboard Admin Area ====================================
 // default routes dasboard admin
 app.get("/dashboard", async (req, res) => {
-  try {
-    const productName = req.query.product_name || null;
-    const productsCount = await totalProducts(productName);
+  if (req.session.authenticated) {
+    if (req.session.dataUser.role == 1 || req.session.dataUser.role == 2) {
+      const productName = req.query.product_name || null;
+      const productsCount = await totalProducts(productName);
 
-    const customerName = req.query.name || null;
-    const userCount = await totalUser(customerName);
+      const roleFilter = 3; // Filter for role === 3
+      const userCount = await totalUser(roleFilter);
 
-    res.render("index", {
-      title: "VirtuVorgue",
-      layout: "layout/core-index",
-      productsCount,
-      userCount,
+      const roleFilterAdmin = 2; // Filter for role === 3
+      const adminCount = await totalUser(roleFilterAdmin);
+      var userData = await searchUserByID(req.session.dataUser.id);
+      res.render("index", {
+        title: "VirtuVorgue",
+        layout: "layout/core-index",
+        productsCount,
+        userCount,
+        message: req.flash("message"),
+        adminCount,
+        userData,
+      });
+    } else {
+      req.flash("message", { alert: "warning", message: "Access Denied!" });
+      res.redirect("/");
+    }
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
     });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Internal Server Error");
+    res.redirect("/login");
   }
 });
 
-// ========================= Transaction ====================================================
-app.get("/cart", (req, res) => {
-  res.render("cart", {
-    title: "VirtuVorgue - Cart",
-    layout: "layout/core-index",
-  });
+// ========================= CART ====================================================
+app.get("/cart", async (req, res) => {
+  if (req.session.authenticated) {
+    var dataCart = await searchCartByUserId(req.session.dataUser.id);
+    res.render("cart", {
+      title: "VirtuVorgue - Cart",
+      layout: "layout/core-index",
+      dataCart,
+      logged: "true",
+      message: req.flash("message"),
+    });
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
+    });
+    res.redirect("/login");
+  }
 });
 
-// ========================= END Transaction ====================================================
+app.get("/add-cart/:product_id", async (req, res) => {
+  try {
+    if (req.session.authenticated) {
+      // Mendapatkan data produk dari database berdasarkan product_id
+      const product = await fetchProductsById(req.params.product_id);
+
+      if (product) {
+        // Melakukan pengecekan apakah produk sudah ada di dalam cart
+        const cartCheck = await searchCart(
+          req.session.dataUser.id,
+          req.params.product_id
+        );
+
+        if (cartCheck) {
+          // Jika produk sudah ada di dalam cart, update jumlahnya
+          const data = [
+            req.session.dataUser.id,
+            req.params.product_id,
+            cartCheck.quantity + 1,
+          ];
+          await updateCart(data);
+          req.flash("message", {
+            alert: "success",
+            message: "Items have been updated in the cart!",
+          });
+        } else {
+          // Jika produk belum ada di dalam cart, tambahkan ke dalam cart dengan jumlah 1
+          const data = [req.session.dataUser.id, req.params.product_id, 1];
+          await addCart(data);
+
+          req.flash("message", {
+            alert: "success",
+            message: "Item has been added to cart!",
+          });
+        }
+
+        res.redirect("/products");
+      } else {
+        req.flash("message", {
+          alert: "danger",
+          message: "Product not found!",
+        });
+        res.redirect("/products");
+      }
+    } else {
+      req.flash("message", {
+        alert: "failed",
+        message: "You must log in first!",
+      });
+      res.redirect("/login");
+    }
+  } catch (error) {
+    console.error(error);
+    req.flash("message", {
+      alert: "danger",
+      message: "Error adding item to cart!",
+    });
+    res.redirect("/products");
+  }
+});
+
+// controller sum product cart
+app.get("/sum-cart/:product_id", async (req, res) => {
+  if (req.session.authenticated) {
+    var dataProduct = await searchCartByUserId(req.params.product_id);
+    var cartCheck = await searchCart(
+      req.session.dataUser.id,
+      req.params.product_id
+    );
+    var jumlahUpdate = cartCheck.quantity + 1;
+    if (jumlahUpdate <= dataProduct.quantity) {
+      var data = [req.session.dataUser.id, req.params.product_id, jumlahUpdate];
+      await updateCart(data);
+      req.flash("message", {
+        alert: "success",
+        message: "Number of Items Added Successfully!",
+      });
+    } else {
+      req.flash("message", {
+        alert: "failed",
+        message: "Number of Items Exceeds Maximum!",
+      });
+    }
+    res.redirect("/cart");
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
+    });
+    res.redirect("/login");
+  }
+});
+
+// controller sub product cart
+app.get("/sub-cart/:product_id", async (req, res) => {
+  if (req.session.authenticated) {
+    var cartCheck = await searchCart(
+      req.session.dataUser.id,
+      req.params.product_id
+    );
+    var jumlahUpdate = cartCheck.quantity - 1;
+    if (jumlahUpdate > 0) {
+      var data = [req.session.dataUser.id, req.params.product_id, jumlahUpdate];
+      await updateCart(data);
+      req.flash("message", {
+        alert: "success",
+        message: "Number of Items Successfully Reduced!",
+      });
+    } else {
+      var data = [req.session.dataUser.id, req.params.product_id];
+      await deleteCart(data);
+      req.flash("message", {
+        alert: "warning",
+        message: "Deleted Item Data!",
+      });
+    }
+    res.redirect("/cart");
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
+    });
+    res.redirect("/login");
+  }
+});
+
+// ========================= END CART ====================================================
 
 // ================ MIDDLEWARE ADMIN ========================
 
 // data-admin
 app.get("/data-admin", async (req, res) => {
-  const dataUser = await fetchDataUser();
-  const userAdmin = dataUser.filter(
-    (user) => user.role === 1 || user.role === 2
-  );
-  res.render("admin/data-admin", {
-    title: "VirtuVorgue - Data Admin",
-    layout: "layout/core-index",
-    userAdmin,
-    msg: req.flash("msg"),
-  });
+  if (req.session.authenticated) {
+    if (req.session.dataUser.role == 1 || req.session.dataUser.role == 2) {
+      const dataUser = await fetchDataUser();
+      const userAdmin = dataUser.filter(
+        (user) => user.role === 1 || user.role === 2
+      );
+      res.render("admin/data-admin", {
+        title: "VirtuVorgue - Data Admin",
+        layout: "layout/core-index",
+        userAdmin,
+        message: req.flash("message"),
+      });
+    } else {
+      req.flash("message", { alert: "warning", message: "Access Denied!" });
+      res.redirect("/");
+    }
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
+    });
+    res.redirect("/");
+  }
 });
 
 // add data-admin
 app.get("/data-admin/add", (req, res) => {
-  res.render("admin/add-admin", {
-    title: "VirtuVorgue - Add Admin",
-    layout: "layout/core-index",
-  });
+  if (req.session.authenticated) {
+    if (req.session.dataUser.role == 1 || req.session.dataUser.role == 2) {
+      if (req.session.dataUser.role == 1) {
+        res.render("admin/add-admin", {
+          title: "VirtuVorgue - Add Admin",
+          layout: "layout/core-index",
+          message: req.flash("message"),
+        });
+      } else {
+        req.flash("message", {
+          alert: "warning",
+          message: "Admin Cannot Access the Add User Menu!",
+        });
+        res.redirect("/data-admin");
+      }
+    } else {
+      req.flash("message", { alert: "warning", message: "Access Denied!" });
+      res.redirect("/");
+    }
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
+    });
+    res.redirect("/login");
+  }
 });
 
 // Tangani pengiriman formulir untuk menambahkan admin oleh super admin
@@ -331,67 +625,105 @@ app.post(
     check("mobile_phone", "mobile phone number invalid").isMobilePhone("id-ID"),
   ],
   async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.render("admin/add-admin", {
-        title: "VirtuVorgue - Add Admin",
-        layout: "layout/core-index.ejs",
-        errors: errors.array(),
-      });
-    } else {
-      try {
-        console.log("Data yang dikirim: ", req.body);
+    if (req.session.authenticated) {
+      if (req.session.dataUser.role == 1 || req.session.dataUser.role == 2) {
+        if (req.session.dataUser.role == 1) {
+          const errors = validationResult(req);
+          if (!errors.isEmpty()) {
+            res.render("admin/add-admin", {
+              title: "VirtuVorgue - Add Admin",
+              layout: "layout/core-index.ejs",
+              errors: errors.array(),
+            });
 
-        // Gunakan fungsi addDataAdmin dari model basis data
-        await addDataUser(
-          req.body.username,
-          req.body.name,
-          req.body.role,
-          req.body.email,
-          req.body.mobile_phone,
-          req.body.password
-        );
-        req.flash("msg", "Data added successfully");
+            console.log("Data yang dikirim: ", req.body);
 
-        // Redirect ke halaman data-admin untuk melihat data yang diperbarui
-        res.redirect("/data-admin");
-      } catch (err) {
-        console.error(err.message);
-        req.flash("msg", "An error occurred while adding data");
-        res.status(500).redirect("/data-admin");
+            // Gunakan fungsi addDataAdmin dari model basis data
+            await addDataUser(
+              req.body.username,
+              req.body.name,
+              req.body.role,
+              req.body.email,
+              req.body.mobile_phone,
+              req.body.password
+            );
+            req.flash("msg", "Data added successfully");
+
+            // Redirect ke halaman data-admin untuk melihat data yang diperbarui
+            res.redirect("/data-admin");
+          }
+        } else {
+          req.flash("message", {
+            alert: "warning",
+            message: "Admin Cannot Access the Add Admin Menu!",
+          });
+          res.redirect("/data-admin");
+        }
+      } else {
+        req.flash("message", { alert: "warning", message: "Access Denied!" });
+        res.redirect("/");
       }
+    } else {
+      req.flash("message", {
+        alert: "failed",
+        message: "You Must Log In First!",
+      });
+      res.redirect("/");
     }
   }
 );
 
 // detail data-admin
 app.get("/data-admin/detail-admin/:user_id", async (req, res) => {
-  try {
-    const adminId = req.params.user_id;
-    const admins = await fetchDataUser();
-    const admin = admins.find((data_admin) => data_admin.user_id == adminId); // Tambahkan pemanggilan fetchDataUser dengan parameter id_customer
-    res.render("admin/detail-admin", {
-      title: "VirtuVorgue - Detail Admin",
-      layout: "layout/core-index.ejs",
-      admin,
+  if (req.session.authenticated) {
+    if (req.session.dataUser.role == 1 || req.session.dataUser.role == 2) {
+      const adminId = req.params.user_id;
+      const admins = await fetchDataUser();
+      const admin = admins.find((data_admin) => data_admin.user_id == adminId); // Tambahkan pemanggilan fetchDataUser dengan parameter id_customer
+      res.render("admin/detail-admin", {
+        title: "VirtuVorgue - Detail Admin",
+        layout: "layout/core-index.ejs",
+        admin,
+      });
+    } else {
+      req.flash("message", { alert: "warning", message: "Access Denied!" });
+      res.redirect("/");
+    }
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
     });
-  } catch (err) {
-    console.log(err.msg);
   }
 });
 
 // update data-admin
-app.get("/data-admin/update-admin/:id_admin", async (req, res) => {
-  try {
-    const admins = await searchAdmin(req.params.id_admin);
-    res.render("admin/update-admin", {
-      title: "VirtuVorgue - Update Admin",
-      layout: "layout/core-index",
-      admins,
+app.get("/data-admin/update-admin/:user_id", async (req, res) => {
+  if (req.session.authenticated) {
+    if (req.session.dataUser.role == 1 || req.session.dataUser.role == 2) {
+      if (req.session.dataUser.role == 1) {
+        const admins = await searchUserByID(req.params.user_id);
+        res.render("admin/update-admin", {
+          title: "VirtuVorgue - Update Admin",
+          layout: "layout/core-index",
+          admins,
+          message: req.flash("message"),
+        });
+      } else {
+        req.flash("message", {
+          alert: "warning",
+          message: "Admin Cannot Access the Update Admin Menu!",
+        });
+      }
+    } else {
+      req.flash("message", { alert: "warning", message: "Access Denied!" });
+      res.redirect("/");
+    }
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
     });
-  } catch (err) {
-    console.error(err.msg);
-    res.status(500);
   }
 });
 
@@ -399,16 +731,23 @@ app.post(
   "/data-admin/update",
   [
     body("id_admin").custom(async (value, { req }) => {
-      const duplicate = await duplicateName(value);
+      const duplicate = await duplicateUserName(value);
       if (value !== req.body.oldName && duplicate) {
         throw new Error("Name has been registered");
       }
       return true;
     }),
     body("email").custom(async (value) => {
-      const emailDuplicate = await emailDuplicateCheck(value);
+      const emailDuplicate = await emailDuplicateUserCheck(value);
       if (emailDuplicate) {
         throw new Error("Email has been registered");
+      }
+      return true;
+    }),
+    body("password").custom(async (value) => {
+      const passwordDuplicate = await duplicatePasswordUser(value);
+      if (passwordDuplicate) {
+        throw new Error("Password has been registered");
       }
       return true;
     }),
@@ -418,43 +757,67 @@ app.post(
     ),
   ],
   async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.render("admin/update-admin", {
-        title: "VirtuVorgue - Update Admin",
-        layout: "layout/core-index",
-        errors: errors.array(),
-        admins: req.body,
-      });
-    } else {
-      try {
-        await updateAdmin(req.body);
-        req.flash("msg", "Data updated successfully");
-        res.redirect("/data-admin");
-      } catch (err) {
-        console.error(err.msg);
-        res.status(500);
+    if (req.session.authenticated) {
+      if (req.session.dataUser.role == 1 || req.session.dataUser.role == 2) {
+        if (req.session.dataUser.role == 1) {
+          const errors = validationResult(req);
+          if (!errors.isEmpty()) {
+            res.render("admin/update-admin", {
+              title: "VirtuVorgue - Update Admin",
+              layout: "layout/core-index",
+              errors: errors.array(),
+              admins: req.body,
+            });
+
+            await updateUser(req.body);
+            req.flash("msg", "Data updated successfully");
+            res.redirect("/data-admin");
+          }
+        } else {
+          req.flash("message", {
+            alert: "warning",
+            message: "Admin Cannot Access the Update Admin Menu!",
+          });
+          res.redirect("/data-admin");
+        }
+      } else {
+        req.flash("message", { alert: "warning", message: "Access Denied!" });
+        res.redirect("/");
       }
+    } else {
+      req.flash("message", {
+        alert: "failed",
+        message: "You must log in first!",
+      });
     }
   }
 );
 
 // delete data-admin / by ID
-app.get("/data-admin/delete-admin/:id_admin", async (req, res) => {
-  try {
-    const deletedAdmin = await deleteDataAdmin(req.params.id_admin);
+app.get("/data-admin/delete-admin/:user_id", async (req, res) => {
+  if (req.session.authenticated) {
+    if (req.session.dataUser.role == 1) {
+      const deletedAdmin = await deleteDataUser(req.params.user_id);
 
-    if (!deletedAdmin) {
-      req.flash("msg", "Data not found or has been deleted");
+      if (!deletedAdmin) {
+        req.flash("msg", "Data not found or has been deleted");
+      } else {
+        req.flash("msg", "Data deleted successfully");
+      }
+
+      res.redirect("/data-admin");
     } else {
-      req.flash("msg", "Data deleted successfully");
+      req.flash("message", {
+        alert: "warning",
+        message: "Admin Cannot Access the Delete Menu!",
+      });
+      res.redirect("/data-admin");
     }
-
-    res.redirect("/data-admin");
-  } catch (err) {
-    console.error(err.msg);
-    req.flash("msg", "An error occurred while deleting data.");
-    res.redirect("/data-admin");
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
+    });
   }
 });
 
@@ -463,14 +826,27 @@ app.get("/data-admin/delete-admin/:id_admin", async (req, res) => {
 // ================ MIDDLEWARE CUSTOMER ========================
 // data-customer
 app.get("/data-customer", async (req, res) => {
-  const customers = await fetchDataUser();
-  const cust = customers.filter((c) => c.role === 3);
-  res.render("customers/data-customer", {
-    title: "VirtuVorgue - Data Customer",
-    layout: "layout/core-index",
-    cust,
-    msg: req.flash("msg "),
-  });
+  if (req.session.authenticated) {
+    if (req.session.dataUser.role == 1 || req.session.dataUser.role == 2) {
+      const customers = await fetchDataUser();
+      const cust = customers.filter((c) => c.role === 3);
+      res.render("customers/data-customer", {
+        title: "VirtuVorgue - Data Customer",
+        layout: "layout/core-index",
+        cust,
+        message: req.flash("message"),
+      });
+    } else {
+      req.flash("message", { alert: "warning", message: "Access Denied!" });
+      res.redirect("/");
+    }
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
+    });
+    res.redirect("/");
+  }
 });
 
 // add data-admin
@@ -481,7 +857,7 @@ app.get("/data-customer/add", (req, res) => {
   });
 });
 
-// Tangani pengiriman formulir untuk menambahkan customer
+// middleware ini akan di hapus
 app.post(
   "/data-customer/add",
   [
@@ -539,20 +915,30 @@ app.post(
 
 // detail data-customer
 app.get("/data-customer/detail-customer/:user_id", async (req, res) => {
-  try {
-    const customerId = req.params.user_id;
-    const customers = await fetchDataUser();
-    const customer = customers.find(
-      (data_customer) => data_customer.user_id == customerId
-    ); // Tambahkan pemanggilan fetchDataCustomer dengan parameter id_customer
+  if (req.session.authenticated) {
+    if (req.session.dataUser.role == 2) {
+      const customerId = req.params.user_id;
+      const customers = await fetchDataUser();
+      const customer = customers.find(
+        (data_customer) => data_customer.user_id == customerId
+      ); // Tambahkan pemanggilan fetchDataCustomer dengan parameter id_customer
 
-    res.render("customers/detail-customer", {
-      title: "VirtuVorgue - Detail Customer",
-      layout: "layout/core-index.ejs",
-      customer,
+      res.render("customers/detail-customer", {
+        title: "VirtuVorgue - Detail Customer",
+        layout: "layout/core-index.ejs",
+        customer,
+        message: req.flash("message"),
+      });
+    } else {
+      req.flash("message", { alert: "warning", message: "Access Denied!" });
+      res.redirect("/");
+    }
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
     });
-  } catch (err) {
-    console.log(err.msg);
+    res.redirect("/");
   }
 });
 
@@ -616,21 +1002,28 @@ app.post(
 );
 
 // delete data-admin / by ID
-app.get("/data-customer/delete-customer/:id_customer", async (req, res) => {
-  try {
-    const deletedCustomer = await deleteDataCustomer(req.params.id_customer);
+app.get("/data-customer/delete-customer/:user_id", async (req, res) => {
+  if (req.session.authenticated) {
+    if (req.session.dataUser.role == 1) {
+      const deletedCustomer = await deleteDataUser(req.params.user_id);
 
-    if (!deletedCustomer) {
-      req.flash("msg", "Data not found or has been deleted");
+      if (!deletedCustomer) {
+        req.flash("msg", "Data not found or has been deleted");
+      } else {
+        req.flash("msg", "Data deleted successfully");
+      }
+
+      res.redirect("/data-customer");
     } else {
-      req.flash("msg", "Data deleted successfully");
+      req.flash("message", { alert: "warning", message: "Access Denied!" });
+      res.redirect("/");
     }
-
-    res.redirect("/data-customer");
-  } catch (err) {
-    console.error(err.msg);
-    req.flash("msg", "An error occurred while deleting data.");
-    res.redirect("/data-customer");
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
+    });
+    res.redirect("/");
   }
 });
 
@@ -639,37 +1032,50 @@ app.get("/data-customer/delete-customer/:id_customer", async (req, res) => {
 // ==================================== Products =======================================================
 // Pc Product list
 app.get("/products", async (req, res) => {
-  const products = await fetchDataProducts(req.query.product_name);
-  res.render("products/products", {
-    title: "VirtuVorgue - Products",
-    layout: "layout/core-index",
-    products: products,
-  });
-});
-
-app.get("/products/PC/add", (req, res) => {
-  res.render("products/add-product-pc", {
-    title: "VirtuVorgue - Products",
-    layout: "layout/core-index",
-  });
-});
-
-app.get("/categories", (req, res) => {
-  res.render("products/categories", {
-    title: "VirtuVorgue - Categories",
-    layout: "layout/core-index",
-  });
+  if (req.session.authenticated) {
+    if (req.session.dataUser.role == 2 || req.session.dataUser.role == 3) {
+      const products = await fetchDataProducts(req.query.product_name);
+      res.render("products/products", {
+        title: "VirtuVorgue - Products",
+        layout: "layout/core-index",
+        products: products,
+        message: req.flash("message"),
+      });
+    } else {
+      req.flash("message", { alert: "warning", message: "Access Denied!" });
+      res.redirect("/");
+    }
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
+    });
+    res.redirect("/");
+  }
 });
 
 // middlware untuk inventory item
 app.get("/items", async (req, res) => {
-  const products = await fetchDataProducts();
-  res.render("inventory/items", {
-    title: "VirtuVorgue - Items",
-    layout: "layout/core-index",
-    msg: req.flash("msg"),
-    products,
-  });
+  if (req.session.authenticated) {
+    if (req.session.dataUser.role == 2) {
+      const products = await fetchDataProducts();
+      res.render("inventory/items", {
+        title: "VirtuVorgue - Items",
+        layout: "layout/core-index",
+        message: req.flash("message"),
+        products,
+      });
+    } else {
+      req.flash("message", { alert: "warning", message: "Access Denied!" });
+      res.redirect("/");
+    }
+  } else {
+    req.flash("message", {
+      alert: "failed",
+      message: "You must log in first!",
+    });
+    res.redirect("/");
+  }
 });
 
 // middleware add items
@@ -747,6 +1153,50 @@ app.post(
   }
 );
 
+// app.post(
+//   "/items/update",
+//   [
+//     body("id_admin").custom(async (value, { req }) => {
+//       const duplicate = await duplicateName(value);
+//       if (value !== req.body.oldName && duplicate) {
+//         throw new Error("Name has been registered");
+//       }
+//       return true;
+//     }),
+//     body("email").custom(async (value) => {
+//       const emailDuplicate = await emailDuplicateCheck(value);
+//       if (emailDuplicate) {
+//         throw new Error("Email has been registered");
+//       }
+//       return true;
+//     }),
+//     check("email", "Invalid email").isEmail(),
+//     check("mobile_phone", "Something wrong with phone number").isMobilePhone(
+//       "id-ID"
+//     ),
+//   ],
+//   async (req, res) => {
+//     const errors = validationResult(req);
+//     if (!errors.isEmpty()) {
+//       res.render("admin/update-admin", {
+//         title: "VirtuVorgue - Update Admin",
+//         layout: "layout/core-index",
+//         errors: errors.array(),
+//         admins: req.body,
+//       });
+//     } else {
+//       try {
+//         await updateAdmin(req.body);
+//         req.flash("msg", "Data updated successfully");
+//         res.redirect("/data-admin");
+//       } catch (err) {
+//         console.error(err.msg);
+//         res.status(500);
+//       }
+//     }
+//   }
+// );
+
 // middleware untuk detail items
 app.get("/items/detail-products/:product_name", async (req, res) => {
   try {
@@ -788,11 +1238,32 @@ app.get("/items/delete-products/:product_name", async (req, res) => {
 // ==================================== End Products ======================================================
 
 // ==================================== ERROR ====================================
-app.use("/", (req, res) => {
-  res.render("layout/error404", {
-    title: "VirtuVorgue - Error",
-    layout: "layout/error404",
-  });
+app.use("/", async (req, res) => {
+  var log = req.session.authenticated ? "true" : "false";
+  if (req.session.authenticated) {
+    var userData = await searchUserByID(req.session.dataUser.id);
+    if (req.session.dataUser.role == 1 || req.session.dataUser.role == 2) {
+      res.render("layout/error404", {
+        title: "VirtuVorgue - Page Not Found",
+        userData,
+        layout: "layout/error404",
+      });
+    } else {
+      res.render("layout/error404", {
+        title: "VirtuVorgue - Page Not Found",
+        userData,
+        logged: log,
+        layout: "layout/error404",
+      });
+    }
+  } else {
+    res.render("layout/error404", {
+      title: "VirtuVorgue - Page Not Found",
+      layout: "layout/error404",
+      logged: log,
+      userData,
+    });
+  }
 });
 // ==================================== End ERROR ====================================
 
