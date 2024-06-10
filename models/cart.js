@@ -1,4 +1,4 @@
-const pool = require("../models/database.js");
+const pool = require("../config/database.js");
 
 const addCart = async (data) => {
   // Set quantity to 1 if not provided

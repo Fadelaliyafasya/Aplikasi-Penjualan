@@ -1,4 +1,4 @@
-const pool = require("../models/database.js");
+const pool = require("../config/database.js");
 const bcrypt = require("bcrypt");
 
 // Fungsi untuk ambil data dari database PostgreSQL
@@ -133,23 +133,38 @@ const emailDuplicateUserCheck = async (email) => {
 };
 
 // update contact
-const updateUser = async (newContact) => {
-  const connection = await pool.connect();
-  const query = `
-    UPDATE data_user
-    SET user_id = $1, username = $2, name = $3, role = $4, email = $5, mobile_phone = $6
-    WHERE name = $7
-  `;
-  ``;
-  await connection.query(query, [
-    newContact.user_id,
-    newContact.username,
-    newContact.name,
-    newContact.role,
-    newContact.email,
-    newContact.mobile_phone,
-    newContact.oldName,
-  ]);
+// const updateUser = async (newContact) => {
+//   const connection = await pool.connect();
+//   const query = `
+//     UPDATE data_user
+//     SET user_id = $1, username = $2, name = $3, role = $4, email = $5, mobile_phone = $6
+//     WHERE name = $7
+//   `;
+//   ``;
+//   await connection.query(query, [
+//     newContact.user_id,
+//     newContact.username,
+//     newContact.name,
+//     newContact.role,
+//     newContact.email,
+//     newContact.mobile_phone,
+//     newContact.oldName,
+//   ]);
+// };
+
+const updateUser = async (data) => {
+  const user = await pool.query(
+    "UPDATE data_user SET username = $1, name = $2, role = $3, email = $4, mobile_phone = $5 WHERE name = $6",
+    [
+      data.username,
+      data.name,
+      data.role,
+      data.email,
+      data.mobile_phone,
+      data.oldName,
+    ]
+  );
+  return user;
 };
 
 // Delete-User

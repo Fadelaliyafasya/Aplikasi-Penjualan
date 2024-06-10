@@ -1,4 +1,4 @@
-const pool = require("../models/database.js");
+const pool = require("../config/database.js");
 
 // Fungsi untuk ambil data dari database PostgreSQL
 // const fetchDataProducts = async () => {
@@ -104,33 +104,12 @@ const totalProducts = async (product_name) => {
   }
 };
 
-// Fungsi untuk Cek ID  products
-const checkIdProducts = async (product_id) => {
-  const connection = await pool.connect();
-
-  try {
-    // Mengecek apakah product_id sudah terdaftar
-    const duplicateCheck = await connection.query(
-      "SELECT COUNT(*) FROM products WHERE product_id = $1",
-      [product_id]
-    );
-
-    if (duplicateCheck.rows[0].count === 0) {
-      // Jika tidak ada duplikat, mengembalikan null
-      return null;
-    }
-
-    // Mengambil data pegawai berdasarkan product_id
-    const result = await connection.query(
-      "SELECT * FROM products WHERE product_id = $1",
-      [product_id]
-    );
-
-    // Mengembalikan data products
-    return result.rows[0];
-  } finally {
-    connection.release();
-  }
+const searchProductByID = async (data) => {
+  const product = await connection.query(
+    "select * from products where product_id = $1",
+    [data]
+  );
+  return product.rows[0];
 };
 
 // duplicate Id check
@@ -183,6 +162,14 @@ const deleteDataProducts = async (product_name) => {
   }
 };
 
+const updateQuantityProduct = async (quantity, product_id) => {
+  const product = await pool.query(
+    "update products set stock_quantity = $1 where product_id = $2",
+    [quantity, product_id]
+  );
+  return product;
+};
+
 // Cari contact
 const searchProducts = async (product_id) => {
   const products = await fetchDataProducts();
@@ -196,7 +183,6 @@ module.exports = {
   fetchDataProducts,
   addDataProducts,
   fetchProductsById,
-  checkIdProducts,
   duplicateIdProductsCheck,
   searchProducts,
   emailDuplicateProductsCheck,
@@ -204,4 +190,6 @@ module.exports = {
   duplicateProductsName,
   updateProducts,
   totalProducts,
+  searchProductByID,
+  updateQuantityProduct,
 };

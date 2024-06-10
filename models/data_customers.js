@@ -1,4 +1,4 @@
-const pool = require("../models/database.js");
+const pool = require("../config/database.js");
 const bcrypt = require("bcrypt");
 
 // Fungsi untuk ambil semua data customer dari database PostgreSQL
