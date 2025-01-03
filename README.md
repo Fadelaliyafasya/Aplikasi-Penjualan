@@ -1,4 +1,4 @@
 # Aplikasi-Penjualan
 Aplikasi-Penjualan
 
-Masih dalam pengembangan 
+Masih dalam Pengembangan
